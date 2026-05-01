@@ -261,6 +261,27 @@
   box-shadow: 0 6px 18px rgba(46,204,113,0.45);
 }
 
+/* Botão clicável que envolve o número */
+.counterNumBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  border-radius: var(--r);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.counterNumBtn:hover {
+  background: var(--yellow-dim);
+}
+
 .counterNum {
   font-family: var(--font);
   font-size: 88px;
@@ -268,9 +289,46 @@
   color: var(--dark);
   line-height: 1;
   letter-spacing: -4px;
-  flex: 1;
-  text-align: center;
+  display: block;
 }
+
+.counterNumHint {
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  position: absolute;
+  bottom: -2px;
+  right: calc(50% - 32px);
+}
+
+.counterNumBtn:hover .counterNumHint {
+  opacity: 1;
+}
+
+/* Input de digitação direta das fatias */
+.counterInput {
+  flex: 1;
+  background: var(--yellow-dim);
+  border: 2px solid var(--orange);
+  border-radius: var(--r);
+  outline: none;
+  font-family: var(--font);
+  font-size: 88px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1;
+  letter-spacing: -4px;
+  text-align: center;
+  width: 0; /* flex cuida do tamanho */
+  min-width: 0;
+  padding: 4px 0;
+  caret-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(244,162,97,0.2);
+}
+
+.counterInput::-webkit-inner-spin-button,
+.counterInput::-webkit-outer-spin-button { -webkit-appearance: none; }
+.counterInput { -moz-appearance: textfield; }
 
 /* ══════════════════════════════
    BREAKEVEN PILL

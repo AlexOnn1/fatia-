@@ -5,21 +5,42 @@ import { calcular, formatBRL, PRECO_FATIA_REFERENCIA } from './utils'
 import s from './App.module.css'
 
 const INITIAL_STATE: AppState = { valorRodizio: 0, fatias: 0 }
+const MAX_VALOR_DIGITS = 7 // cobre até R$ 9.999,99
 
 export default function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE)
   const [inputValue, setInputValue] = useState<string>('')
   const [editing, setEditing] = useState(false)
+  const [editingFatias, setEditingFatias] = useState(false)
+  const [fatiasInput, setFatiasInput] = useState<string>('')
 
   const calc = calcular(state)
 
+  // ── Valor pago ──────────────────────────────────
   const handleValorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
+    const digitsOnly = raw.replace(/[^0-9]/g, '')
+    if (digitsOnly.length > MAX_VALOR_DIGITS) return
     setInputValue(raw)
     const parsed = parseFloat(raw.replace(',', '.'))
     setState(prev => ({ ...prev, valorRodizio: isNaN(parsed) ? 0 : parsed }))
   }, [])
 
+  // ── Fatias — digitação direta ────────────────────
+  const handleFatiasInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '') // só dígitos
+    if (raw.length > 3) return                    // máx 999 fatias
+    setFatiasInput(raw)
+    const parsed = parseInt(raw, 10)
+    setState(prev => ({ ...prev, fatias: isNaN(parsed) ? 0 : Math.max(0, parsed) }))
+  }, [])
+
+  const handleFatiasBlur = useCallback(() => {
+    setEditingFatias(false)
+    setFatiasInput('')
+  }, [])
+
+  // ── Botões ───────────────────────────────────────
   const handleMinus = useCallback(() => {
     setState(prev => ({ ...prev, fatias: Math.max(0, prev.fatias - 1) }))
   }, [])
@@ -31,8 +52,12 @@ export default function App() {
   const handleReset = useCallback(() => {
     setState(INITIAL_STATE)
     setInputValue('')
+    setFatiasInput('')
+    setEditing(false)
+    setEditingFatias(false)
   }, [])
 
+  // ── Cálculos auxiliares ──────────────────────────
   const fatiasParaEmpatar = calc.fatiasParaEmpatar ?? 0
   const fatiasRestantes   = Math.max(0, fatiasParaEmpatar - state.fatias)
   const progressPct       = fatiasParaEmpatar > 0
@@ -40,7 +65,6 @@ export default function App() {
     : 0
   const empatou = state.valorRodizio > 0 && fatiasRestantes === 0 && state.fatias > 0
 
-  // Dollar sign color driven by status
   const dollarClass =
     calc.status === 'lucro'    ? s.dollarGreen
     : calc.status === 'prejuizo' ? s.dollarRed
@@ -106,7 +130,7 @@ export default function App() {
 
         {/* ── COUNTER ── */}
         <section className={s.card}>
-          <p className={s.cardTitle + ' ' + s.cardTitleRed}>Fatias consumidas</p>
+          <p className={`${s.cardTitle} ${s.cardTitleRed}`}>Fatias consumidas</p>
 
           <div className={s.counter}>
             <button
@@ -116,7 +140,31 @@ export default function App() {
               aria-label="Remover fatia"
             >−</button>
 
-            <span className={s.counterNum}>{state.fatias}</span>
+            {/* Número clicável para digitar direto */}
+            {editingFatias ? (
+              <input
+                className={s.counterInput}
+                type="number"
+                inputMode="numeric"
+                value={fatiasInput}
+                onChange={handleFatiasInputChange}
+                onBlur={handleFatiasBlur}
+                autoFocus
+                min={0}
+                max={999}
+                placeholder={String(state.fatias)}
+              />
+            ) : (
+              <button
+                className={s.counterNumBtn}
+                onClick={() => { setFatiasInput(''); setEditingFatias(true) }}
+                title="Toque para digitar a quantidade"
+                aria-label="Editar número de fatias"
+              >
+                <span className={s.counterNum}>{state.fatias}</span>
+                <span className={s.counterNumHint}>✏️</span>
+              </button>
+            )}
 
             <button
               className={`${s.cBtn} ${s.cBtnPlus}`}
@@ -128,7 +176,7 @@ export default function App() {
           {/* BREAKEVEN PILL */}
           {state.valorRodizio > 0 && (
             <div className={`${s.breakevenPill} ${empatou ? s.breakevenDone : ''}`}>
-              <span className={s.breakevenIcon}>{empatou ? '🎯' : '🎯'}</span>
+              <span className={s.breakevenIcon}>🎯</span>
               <span className={s.breakevenText}>
                 {empatou ? (
                   <>Empatou em <strong>{fatiasParaEmpatar}</strong> {fatiasParaEmpatar === 1 ? 'fatia' : 'fatias'} — agora só lucro!</>
@@ -206,17 +254,17 @@ export default function App() {
             <p className={s.resultMsg}>👆 Informe o valor pago para calcular seu resultado</p>
           )}
           {calc.status === 'lucro' && (
-            <p className={s.resultMsg}>🎉 A pizzaria agradece... e chora por dentro!</p>
+            <p className={s.resultMsg}>🎉 A pizzaria saiu perdendo kkkkkk!</p>
           )}
           {calc.status === 'prejuizo' && (
             <p className={s.resultMsg}>
               {state.fatias === 0
-                ? '😱 Pagou e não comeu nada?! Tragédia total!'
-                : `😅 Precisava ter comido mais ${fatiasRestantes} fatiinha${fatiasRestantes !== 1 ? 's' : ''}...`}
+                ? 'Pagou e não comeu nada?! Tenha vergonha >:( !'
+                : `Precisava ter comido mais ${fatiasRestantes} fatiazinhas${fatiasRestantes !== 1 ? 's' : ''}...`}
             </p>
           )}
           {calc.status === 'empate' && (
-            <p className={s.resultMsg}>🤝 Empatou! Honrou cada centavo.</p>
+            <p className={s.resultMsg}>🤝 Empatou! Nem vc nem a pizzaria.</p>
           )}
         </section>
 
@@ -228,60 +276,22 @@ export default function App() {
       </main>
 
       <footer className={s.footer}>
-        {/* Quote + referência */}
         <div className={s.footerQuote}>
           <p className={s.quote}>"Não é exagero se for no rodízio."</p>
         </div>
         <p className={s.footerRef}>Ref.: fatia avulsa a {formatBRL(PRECO_FATIA_REFERENCIA)} — mercado BR 2026</p>
 
-        {/* Dev brand bar */}
         <div className={s.footerBar}>
-          {/* Socials */}
           <div className={s.footerSocials}>
-            <a
-              className={s.footerSocialLink}
-              href="https://github.com/AlexOnn1"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              title="GitHub"
-              style={{ '--social-hover': '#f0f0f0' } as React.CSSProperties}
-            ><FaGithub /></a>
-            <a
-              className={s.footerSocialLink}
-              href="https://www.linkedin.com/in/alexsander-albino-dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn"
-              title="LinkedIn"
-              style={{ '--social-hover': '#0A66C2' } as React.CSSProperties}
-            ><FaLinkedinIn /></a>
-            <a
-              className={s.footerSocialLink}
-              href="https://www.instagram.com/alexon_dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              title="Instagram"
-              style={{ '--social-hover': '#E1306C' } as React.CSSProperties}
-            ><FaInstagram /></a>
-            <a
-              className={s.footerSocialLink}
-              href="mailto:alexsander.santos.contato@gmail.com"
-              aria-label="Email"
-              title="Email"
-              style={{ '--social-hover': '#E63946' } as React.CSSProperties}
-            ><FaEnvelope /></a>
+            <a className={s.footerSocialLink} href="https://github.com/AlexOnn1" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub" style={{ '--social-hover': '#f0f0f0' } as React.CSSProperties}><FaGithub /></a>
+            <a className={s.footerSocialLink} href="https://www.linkedin.com/in/alexsander-albino-dev/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn" style={{ '--social-hover': '#0A66C2' } as React.CSSProperties}><FaLinkedinIn /></a>
+            <a className={s.footerSocialLink} href="https://www.instagram.com/alexon_dev/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram" style={{ '--social-hover': '#E1306C' } as React.CSSProperties}><FaInstagram /></a>
+            <a className={s.footerSocialLink} href="mailto:alexsander.santos.contato@gmail.com" aria-label="Email" title="Email" style={{ '--social-hover': '#E63946' } as React.CSSProperties}><FaEnvelope /></a>
           </div>
 
-          {/* Copyright + stack */}
           <div className={s.footerCopy}>
-            <p className={s.footerCopyText}>
-              © 2026 <span>Alexsander Albino</span>. Todos os direitos reservados.
-            </p>
-            <p className={s.footerStack}>
-              Built with <span>React</span> + <span>TypeScript</span> + <span>Vite</span>
-            </p>
+            <p className={s.footerCopyText}>© 2026 <span>Alexsander Albino</span>. Todos os direitos reservados.</p>
+            <p className={s.footerStack}>Built with <span>React</span> + <span>TypeScript</span> + <span>Vite</span></p>
           </div>
         </div>
       </footer>
