@@ -1951,4 +1951,121 @@
   margin-top: 6px;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   CUSTOM AVATARS (SRC/AVATARS) STYLES
+══════════════════════════════════════════════════════════════ */
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px 4px;
+}
+
+.avatarSelectBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 8px;
+  background: var(--surface);
+  border: 2px solid var(--cream-dark);
+  border-radius: var(--r);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.avatarSelectBtn:hover {
+  transform: translateY(-2px);
+  border-color: var(--orange);
+  box-shadow: 0 4px 10px rgba(244, 162, 97, 0.25);
+}
+
+.avatarSelectActive {
+  border: 2.5px solid var(--red);
+  background: var(--red-light);
+  transform: scale(1.06);
+  box-shadow: 0 6px 16px rgba(230, 57, 70, 0.32);
+}
+
+.avatarSelectImg {
+  width: 100%;
+  height: 100%;
+  max-width: 58px;
+  max-height: 58px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.15));
+  pointer-events: none;
+}
+
+/* Image styles in live room */
+.tickerAvatarImg {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.myPlateAvatarImg {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.15));
+}
+
+.rankAvatarImg {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+}
+
+/* Image styles in podium */
+.podiumAvatarImg {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.avatarGoldImg {
+  width: 82px;
+  height: 82px;
+  filter: drop-shadow(0 6px 14px rgba(255, 209, 102, 0.6));
+}
+
+.awardRecipientRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.awardRecipientLabel {
+  color: var(--dark-mid);
+  font-weight: 600;
+}
+
+.awardRecipientAvatar {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.awardRecipientName {
+  color: var(--red);
+  font-weight: 800;
+}
+
+.awardRecipientStat {
+  color: var(--dark-mid);
+  font-size: 11px;
+}
+
+
 

@@ -7,6 +7,7 @@ import {
   reopenRoom,
 } from '../services/roomService'
 import { formatBRL } from '../utils'
+import { AvatarImg } from './AvatarImg'
 import s from '../App.module.css'
 
 interface PodiumModalProps {
@@ -95,7 +96,7 @@ export function PodiumModal({
           <div className={`${s.podiumCol} ${s.podiumCol2}`}>
             {top2 ? (
               <>
-                <span className={s.podiumAvatar}>{top2.emoji}</span>
+                <AvatarImg avatarId={top2.emoji} className={s.podiumAvatarImg} />
                 <span className={s.podiumName}>{top2.name}</span>
                 <span className={s.podiumScore}>{top2.fatias} fatias</span>
                 <div className={`${s.podiumPedestal} ${s.pedestal2}`}>
@@ -112,7 +113,10 @@ export function PodiumModal({
             {top1 ? (
               <>
                 <span className={s.podiumCrown}>👑</span>
-                <span className={`${s.podiumAvatar} ${s.avatarGold}`}>{top1.emoji}</span>
+                <AvatarImg
+                  avatarId={top1.emoji}
+                  className={`${s.podiumAvatarImg} ${s.avatarGoldImg}`}
+                />
                 <span className={`${s.podiumName} ${s.nameGold}`}>{top1.name}</span>
                 <span className={s.podiumScoreBold}>{top1.fatias} fatias</span>
                 <div className={`${s.podiumPedestal} ${s.pedestal1}`}>
@@ -126,7 +130,7 @@ export function PodiumModal({
           <div className={`${s.podiumCol} ${s.podiumCol3}`}>
             {top3 ? (
               <>
-                <span className={s.podiumAvatar}>{top3.emoji}</span>
+                <AvatarImg avatarId={top3.emoji} className={s.podiumAvatarImg} />
                 <span className={s.podiumName}>{top3.name}</span>
                 <span className={s.podiumScore}>{top3.fatias} fatias</span>
                 <div className={`${s.podiumPedestal} ${s.pedestal3}`}>
@@ -150,9 +154,15 @@ export function PodiumModal({
                   <div className={s.awardInfo}>
                     <p className={s.awardTitle}>{aw.title}</p>
                     <p className={s.awardDesc}>{aw.description}</p>
-                    <p className={s.awardRecipient}>
-                      Vencedor: <strong>{aw.recipientEmoji} {aw.recipientName}</strong> ({aw.stat})
-                    </p>
+                    <div className={s.awardRecipientRow}>
+                      <span className={s.awardRecipientLabel}>Vencedor:</span>
+                      <AvatarImg
+                        avatarId={aw.recipientEmoji}
+                        className={s.awardRecipientAvatar}
+                      />
+                      <strong className={s.awardRecipientName}>{aw.recipientName}</strong>
+                      <span className={s.awardRecipientStat}>({aw.stat})</span>
+                    </div>
                   </div>
                 </div>
               ))}

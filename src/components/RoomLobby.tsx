@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import { createRoom, joinRoom } from '../services/roomService'
 import { isFirebaseConfigured } from '../services/firebase'
 import { FirebaseModal } from './FirebaseModal'
+import { AVATARS, DEFAULT_HOST_AVATAR, DEFAULT_GUEST_AVATAR } from '../avatars'
 import type { Room } from '../types'
 import s from '../App.module.css'
-
-const EMOJIS = ['🍕', '👑', '🦁', '🦖', '🥷', '🚀', '🐷', '🥊', '🦊', '⚡', '🧀', '🌮']
 
 interface RoomLobbyProps {
   initialCode?: string
@@ -20,12 +19,12 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
   const [createName, setCreateName] = useState('')
   const [createHostName, setCreateHostName] = useState('')
   const [createValor, setCreateValor] = useState('69.90')
-  const [createEmoji, setCreateEmoji] = useState('🍕')
+  const [createEmoji, setCreateEmoji] = useState(DEFAULT_HOST_AVATAR)
 
   // Join room state
   const [joinCode, setJoinCode] = useState(initialCode.replace(/\s+/g, '').toUpperCase())
   const [joinParticipantName, setJoinParticipantName] = useState('')
-  const [joinEmoji, setJoinEmoji] = useState('🦁')
+  const [joinEmoji, setJoinEmoji] = useState(DEFAULT_GUEST_AVATAR)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,28 +81,24 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
 
   return (
     <div className={s.lobbyContainer}>
-      {/* ── STATUS DE CONEXÃO & CONFIGURAÇÃO FIREBASE ── */}
-      <div className={s.connectionBar}>
-        <div className={s.connectionStatusInfo}>
-          {isFirebaseConfigured ? (
-            <span className={s.connOnlineTag}>
-              🟢 <strong>Online na Nuvem</strong> (Celulares conectados)
-            </span>
-          ) : (
+      {/* ── STATUS DE CONEXÃO & CONFIGURAÇÃO FIREBASE (APENAS SE OFFLINE) ── */}
+      {!isFirebaseConfigured && (
+        <div className={s.connectionBar}>
+          <div className={s.connectionStatusInfo}>
             <span className={s.connOfflineTag}>
               🟡 <strong>Modo Local</strong> (Mesmo navegador)
             </span>
-          )}
+          </div>
+          <button
+            type="button"
+            className={s.configFirebaseBtn}
+            onClick={() => setShowFirebaseModal(true)}
+            title="Configurar Firebase para conectar múltiplos celulares"
+          >
+            ⚙️ Conectar Celulares
+          </button>
         </div>
-        <button
-          type="button"
-          className={s.configFirebaseBtn}
-          onClick={() => setShowFirebaseModal(true)}
-          title="Configurar Firebase para conectar múltiplos celulares"
-        >
-          ⚙️ {isFirebaseConfigured ? 'Firebase Ativo' : 'Conectar Celulares'}
-        </button>
-      </div>
+      )}
 
       <div className={s.lobbyTabs}>
         <button
@@ -192,16 +187,25 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
           </div>
 
           <div className={s.formGroup}>
-            <label className={s.label}>Escolha seu Avatar</label>
-            <div className={s.emojiGrid}>
-              {EMOJIS.map(emoji => (
+            <label className={s.label}>Escolha seu Avatar da Pizza</label>
+            <div className={s.avatarGrid}>
+              {AVATARS.map(avatar => (
                 <button
-                  key={emoji}
+                  key={avatar.id}
                   type="button"
-                  className={`${s.emojiBtn} ${createEmoji === emoji ? s.emojiActive : ''}`}
-                  onClick={() => setCreateEmoji(emoji)}
+                  className={`${s.avatarSelectBtn} ${
+                    createEmoji === avatar.id ? s.avatarSelectActive : ''
+                  }`}
+                  onClick={() => setCreateEmoji(avatar.id)}
+                  title={avatar.name}
+                  aria-label={avatar.name}
                 >
-                  {emoji}
+                  <img
+                    src={avatar.src}
+                    alt={avatar.name}
+                    className={s.avatarSelectImg}
+                    loading="lazy"
+                  />
                 </button>
               ))}
             </div>
@@ -246,16 +250,25 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
           </div>
 
           <div className={s.formGroup}>
-            <label className={s.label}>Escolha seu Avatar</label>
-            <div className={s.emojiGrid}>
-              {EMOJIS.map(emoji => (
+            <label className={s.label}>Escolha seu Avatar da Pizza</label>
+            <div className={s.avatarGrid}>
+              {AVATARS.map(avatar => (
                 <button
-                  key={emoji}
+                  key={avatar.id}
                   type="button"
-                  className={`${s.emojiBtn} ${joinEmoji === emoji ? s.emojiActive : ''}`}
-                  onClick={() => setJoinEmoji(emoji)}
+                  className={`${s.avatarSelectBtn} ${
+                    joinEmoji === avatar.id ? s.avatarSelectActive : ''
+                  }`}
+                  onClick={() => setJoinEmoji(avatar.id)}
+                  title={avatar.name}
+                  aria-label={avatar.name}
                 >
-                  {emoji}
+                  <img
+                    src={avatar.src}
+                    alt={avatar.name}
+                    className={s.avatarSelectImg}
+                    loading="lazy"
+                  />
                 </button>
               ))}
             </div>

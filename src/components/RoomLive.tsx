@@ -8,6 +8,7 @@ import {
 } from '../services/roomService'
 import { formatBRL } from '../utils'
 import { PodiumModal } from './PodiumModal'
+import { AvatarImg } from './AvatarImg'
 import s from '../App.module.css'
 
 interface RoomLiveProps {
@@ -117,8 +118,12 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
       {recentActivities.length > 0 && (
         <div className={s.activityTicker}>
           <span className={s.tickerIcon}>📢</span>
+          <AvatarImg
+            avatarId={recentActivities[0].participantEmoji}
+            className={s.tickerAvatarImg}
+          />
           <div className={s.tickerText}>
-            <strong>{recentActivities[0].participantEmoji} {recentActivities[0].participantName}</strong>{' '}
+            <strong>{recentActivities[0].participantName}</strong>{' '}
             {recentActivities[0].text}
           </div>
         </div>
@@ -128,7 +133,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
       <section className={`${s.card} ${s.myPlateCard}`}>
         <div className={s.myPlateHeader}>
           <div className={s.myPlateUser}>
-            <span className={s.myPlateEmoji}>{me?.emoji || '🍕'}</span>
+            <AvatarImg avatarId={me?.emoji} className={s.myPlateAvatarImg} />
             <div>
               <p className={s.myPlateName}>{me?.name || 'Você'}</p>
               <span className={s.myPlateRankTag}>
@@ -210,7 +215,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
                 <div className={s.rankContent}>
                   <div className={s.rankRow}>
                     <div className={s.rankUserInfo}>
-                      <span className={s.rankAvatar}>{participant.emoji}</span>
+                      <AvatarImg avatarId={participant.emoji} className={s.rankAvatarImg} />
                       <span className={s.rankName}>
                         {participant.name} {isMe && <strong className={s.youTag}>(Você)</strong>}
                       </span>

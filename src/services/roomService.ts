@@ -9,6 +9,7 @@ import type {
   RoomActivity,
 } from '../types'
 import { calcular, PRECO_FATIA_REFERENCIA } from '../utils'
+import { getAvatarEmoji } from '../avatars'
 
 const ROOM_STORAGE_KEY_PREFIX = 'fatia_room_'
 const PARTICIPANT_STORAGE_KEY = 'fatia_current_participant'
@@ -491,7 +492,7 @@ export function generateWhatsAppShareText(
         : '(empatou)'
 
     lines.push(
-      `${medal} ${p.rank}º ${p.emoji} *${p.name}*: ${p.fatias} fatias ${statusText}`
+      `${medal} ${p.rank}º ${getAvatarEmoji(p.emoji)} *${p.name}*: ${p.fatias} fatias ${statusText}`
     )
   })
 
