@@ -1,18 +1,67 @@
 import { useState, useEffect } from 'react'
-import { FaGithub, FaLinkedinIn, FaInstagram, FaEnvelope } from 'react-icons/fa'
-import type { Room } from './types'
-import { formatBRL, PRECO_FATIA_REFERENCIA } from './utils'
+import {
+  FaGithub,
+  FaLinkedinIn,
+  FaInstagram,
+  FaEnvelope,
+  FaWhatsapp,
+  FaGlobe,
+  FaMapMarkerAlt,
+} from 'react-icons/fa'
+import type { Room, SocialLink } from './types'
 import {
   subscribeToRoom,
   getSavedParticipant,
   clearParticipantSession,
 } from './services/roomService'
+import { BrandProvider, useBrand } from './context/BrandContext'
 import { SoloMode } from './components/SoloMode'
 import { RoomLobby } from './components/RoomLobby'
 import { RoomLive } from './components/RoomLive'
 import s from './App.module.css'
 
-export default function App() {
+function renderSocialIcon(link: SocialLink) {
+  switch (link.type) {
+    case 'github':
+      return <FaGithub />
+    case 'linkedin':
+      return <FaLinkedinIn />
+    case 'instagram':
+      return <FaInstagram />
+    case 'whatsapp':
+      return <FaWhatsapp />
+    case 'website':
+      return <FaGlobe />
+    case 'maps':
+      return <FaMapMarkerAlt />
+    case 'email':
+    default:
+      return <FaEnvelope />
+  }
+}
+
+function getSocialHoverColor(type: SocialLink['type']) {
+  switch (type) {
+    case 'github':
+      return '#f0f0f0'
+    case 'linkedin':
+      return '#0A66C2'
+    case 'instagram':
+      return '#E1306C'
+    case 'whatsapp':
+      return '#25D366'
+    case 'maps':
+      return '#EA4335'
+    case 'website':
+      return '#FFD166'
+    case 'email':
+    default:
+      return '#E63946'
+  }
+}
+
+function AppContent() {
+  const { brand } = useBrand()
   const [appMode, setAppMode] = useState<'solo' | 'room'>('solo')
   const [activeRoom, setActiveRoom] = useState<Room | null>(null)
   const [currentParticipantId, setCurrentParticipantId] = useState<string | null>(null)
@@ -66,7 +115,6 @@ export default function App() {
   const handleRoomEntered = (room: Room, participantId: string) => {
     setActiveRoom(room)
     setCurrentParticipantId(participantId)
-    // Atualizar URL sem recarregar a página
     const newUrl = `${window.location.pathname}?sala=${room.code}`
     window.history.replaceState(null, '', newUrl)
   }
@@ -92,17 +140,28 @@ export default function App() {
       {/* ── HEADER ── */}
       <header className={s.header}>
         <div className={s.logoLockup}>
-          <span className={s.logoEmoji} aria-hidden>
-            🍕
-          </span>
+          {brand.logoImageUrl ? (
+            <img src={brand.logoImageUrl} alt={brand.appName} className={s.logoImg} />
+          ) : (
+            <span className={s.logoEmoji} aria-hidden>
+              {brand.logoEmoji}
+            </span>
+          )}
           <div className={s.logoText}>
             <h1 className={s.wordmark}>
-              Fatia<span className={s.dollar}>$</span>
+              {brand.appName.endsWith('$') ? (
+                <>
+                  {brand.appName.slice(0, -1)}
+                  <span className={s.dollar}>$</span>
+                </>
+              ) : (
+                brand.appName
+              )}
             </h1>
-            <p className={s.tagline}>★ Contador Oficial de Rodízio ★</p>
+            <p className={s.tagline}>{brand.tagline}</p>
           </div>
         </div>
-        <p className={s.slogan}>Coma mais. Calcule tudo. Lucro sempre que der.</p>
+        <p className={s.slogan}>{brand.slogan}</p>
 
         {/* ── SELETOR DE MODO: SOLO vs MODO GALERA ── */}
         <div className={s.modeSelector}>
@@ -111,7 +170,7 @@ export default function App() {
             className={`${s.modeBtn} ${appMode === 'solo' ? s.modeBtnActive : ''}`}
             onClick={() => handleModeChange('solo')}
           >
-            🍕 Modo Solo
+            {brand.item.emoji} Modo Solo
           </button>
           <button
             type="button"
@@ -142,68 +201,74 @@ export default function App() {
       {/* ── FOOTER ── */}
       <footer className={s.footer}>
         <div className={s.footerQuote}>
-          <p className={s.quote}>"Não é exagero se for no rodízio."</p>
+          <p className={s.quote}>{brand.footer.quote}</p>
         </div>
-        <p className={s.footerRef}>
-          Ref.: fatia avulsa a {formatBRL(PRECO_FATIA_REFERENCIA)} — mercado BR 2026
-        </p>
+        <p className={s.footerRef}>{brand.item.referenceNote}</p>
 
         <div className={s.footerBar}>
-          <div className={s.footerSocials}>
-            <a
-              className={s.footerSocialLink}
-              href="https://github.com/AlexOnn1"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              title="GitHub"
-              style={{ '--social-hover': '#f0f0f0' } as React.CSSProperties}
-            >
-              <FaGithub />
-            </a>
-            <a
-              className={s.footerSocialLink}
-              href="https://www.linkedin.com/in/alexsander-albino-dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn"
-              title="LinkedIn"
-              style={{ '--social-hover': '#0A66C2' } as React.CSSProperties}
-            >
-              <FaLinkedinIn />
-            </a>
-            <a
-              className={s.footerSocialLink}
-              href="https://www.instagram.com/alexon_dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              title="Instagram"
-              style={{ '--social-hover': '#E1306C' } as React.CSSProperties}
-            >
-              <FaInstagram />
-            </a>
-            <a
-              className={s.footerSocialLink}
-              href="mailto:alexsander.santos.contato@gmail.com"
-              aria-label="Email"
-              title="Email"
-              style={{ '--social-hover': '#E63946' } as React.CSSProperties}
-            >
-              <FaEnvelope />
-            </a>
-          </div>
+          {brand.footer.socialLinks && brand.footer.socialLinks.length > 0 && (
+            <div className={s.footerSocials}>
+              {brand.footer.socialLinks.map((link, idx) => (
+                <a
+                  key={idx}
+                  className={s.footerSocialLink}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={link.label || link.type}
+                  title={link.label || link.type}
+                  style={
+                    {
+                      '--social-hover': getSocialHoverColor(link.type),
+                    } as React.CSSProperties
+                  }
+                >
+                  {renderSocialIcon(link)}
+                </a>
+              ))}
+            </div>
+          )}
 
           <div className={s.footerCopy}>
             <p className={s.footerCopyText}>
-              © 2026 <span>Alexsander Albino</span>. Todos os direitos reservados.
+              © 2026{' '}
+              <a
+                href="https://alexon.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={s.devBrandLink}
+                title="Portfólio de alexon.dev"
+              >
+                alexon.dev
+              </a>
+              {brand.footer.establishmentName !== 'Fatia$' && (
+                <> • {brand.footer.establishmentName}</>
+              )}
+              . Todos os direitos reservados.
             </p>
             <p className={s.footerStack}>
-              Built with <span>React</span> + <span>TypeScript</span> + <span>Vite</span>
+              Desenvolvido com <span>React</span> + <span>TypeScript</span> por{' '}
+              <a
+                href="https://alexon.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={s.devBrandLink}
+                title="Conheça alexon.dev"
+              >
+                alexon.dev 🚀
+              </a>
             </p>
           </div>
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrandProvider>
+      <AppContent />
+    </BrandProvider>
   )
 }

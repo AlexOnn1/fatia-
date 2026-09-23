@@ -1,19 +1,21 @@
 import React, { useState, useCallback } from 'react'
 import type { AppState } from '../types'
 import { calcular, formatBRL } from '../utils'
+import { useBrand } from '../context/BrandContext'
 import s from '../App.module.css'
 
 const INITIAL_STATE: AppState = { valorRodizio: 0, fatias: 0 }
 const MAX_VALOR_DIGITS = 7 // cobre até R$ 9.999,99
 
 export function SoloMode() {
+  const { brand, formatUnits } = useBrand()
   const [state, setState] = useState<AppState>(INITIAL_STATE)
   const [inputValue, setInputValue] = useState<string>('')
   const [editing, setEditing] = useState(false)
   const [editingFatias, setEditingFatias] = useState(false)
   const [fatiasInput, setFatiasInput] = useState<string>('')
 
-  const calc = calcular(state)
+  const calc = calcular(state, brand.item.defaultReferencePrice)
 
   // ── Valor pago ──────────────────────────────────
   const handleValorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +30,7 @@ export function SoloMode() {
   // ── Fatias — digitação direta ────────────────────
   const handleFatiasInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '') // só dígitos
-    if (raw.length > 3) return // máx 999 fatias
+    if (raw.length > 3) return // máx 999
     setFatiasInput(raw)
     const parsed = parseInt(raw, 10)
     setState(prev => ({ ...prev, fatias: isNaN(parsed) ? 0 : Math.max(0, parsed) }))
@@ -74,6 +76,19 @@ export function SoloMode() {
       ? s.empate
       : ''
 
+  const cardPluralTitle = `${brand.item.plural.charAt(0).toUpperCase() + brand.item.plural.slice(1)} consumid${
+    brand.item.unitGender === 'o' ? 'os' : 'as'
+  }`
+
+  const estabName =
+    brand.establishmentType === 'pizzaria'
+      ? 'a pizzaria'
+      : brand.establishmentType === 'churrascaria'
+      ? 'a churrascaria'
+      : brand.establishmentType === 'hamburgueria'
+      ? 'a hamburgueria'
+      : 'o restaurante'
+
   return (
     <div className={s.soloContainer}>
       {/* ── VALOR PAGO ── */}
@@ -113,14 +128,14 @@ export function SoloMode() {
 
       {/* ── COUNTER ── */}
       <section className={s.card}>
-        <p className={`${s.cardTitle} ${s.cardTitleRed}`}>Fatias consumidas</p>
+        <p className={`${s.cardTitle} ${s.cardTitleRed}`}>{cardPluralTitle}</p>
 
         <div className={s.counter}>
           <button
             className={`${s.cBtn} ${s.cBtnMinus}`}
             onClick={handleMinus}
             disabled={state.fatias === 0}
-            aria-label="Remover fatia"
+            aria-label={`Remover ${brand.item.singular}`}
           >
             −
           </button>
@@ -147,7 +162,7 @@ export function SoloMode() {
                 setEditingFatias(true)
               }}
               title="Toque para digitar a quantidade"
-              aria-label="Editar número de fatias"
+              aria-label={`Editar número de ${brand.item.plural}`}
             >
               <span className={s.counterNum}>{state.fatias}</span>
               <span className={s.counterNumHint}>✏️</span>
@@ -157,7 +172,7 @@ export function SoloMode() {
           <button
             className={`${s.cBtn} ${s.cBtnPlus}`}
             onClick={handlePlus}
-            aria-label="Adicionar fatia"
+            aria-label={`Adicionar ${brand.item.singular}`}
           >
             +
           </button>
@@ -170,17 +185,15 @@ export function SoloMode() {
             <span className={s.breakevenText}>
               {empatou ? (
                 <>
-                  Empatou em <strong>{fatiasParaEmpatar}</strong>{' '}
-                  {fatiasParaEmpatar === 1 ? 'fatia' : 'fatias'} — agora só lucro!
+                  Empatou em <strong>{formatUnits(fatiasParaEmpatar)}</strong> — agora só lucro!
                 </>
               ) : state.fatias === 0 ? (
                 <>
-                  Coma <strong>{fatiasParaEmpatar}</strong> fatias para recuperar o valor pago
+                  Consuma <strong>{formatUnits(fatiasParaEmpatar)}</strong> para recuperar o valor pago
                 </>
               ) : (
                 <>
-                  Faltam <strong>{fatiasRestantes}</strong>{' '}
-                  {fatiasRestantes === 1 ? 'fatia' : 'fatias'} para recuperar o valor pago
+                  Faltam <strong>{formatUnits(fatiasRestantes)}</strong> para recuperar o valor pago
                 </>
               )}
             </span>
@@ -206,21 +219,21 @@ export function SoloMode() {
       {/* ── STATS ── */}
       <div className={s.stats}>
         <div className={s.stat}>
-          <span className={s.statIcon}>🍕</span>
+          <span className={s.statIcon}>{brand.item.emoji}</span>
           <span className={s.statLabel}>Valor consumido</span>
           <span className={s.statVal}>
             {calc.valorConsumido !== null && calc.valorConsumido > 0
               ? formatBRL(calc.valorConsumido)
               : '—'}
           </span>
-          {state.fatias > 0 && <span className={s.statSub}>({state.fatias} fatias)</span>}
+          {state.fatias > 0 && <span className={s.statSub}>({formatUnits(state.fatias)})</span>}
         </div>
 
         <div className={s.statDivider} />
 
         <div className={s.stat}>
           <span className={s.statIcon}>💲</span>
-          <span className={s.statLabel}>Por fatia</span>
+          <span className={s.statLabel}>Por {brand.item.singular}</span>
           <span className={s.statVal}>
             {calc.porFatia !== null ? formatBRL(calc.porFatia) : '—'}
           </span>
@@ -249,8 +262,8 @@ export function SoloMode() {
                 : `−${formatBRL(Math.abs(calc.lucro))}`
               : '—'}
           </span>
-          {calc.status === 'lucro' && <span className={s.statSub}>sobre a pizzaria</span>}
-          {calc.status === 'prejuizo' && <span className={s.statSub}>a pizzaria ganhou</span>}
+          {calc.status === 'lucro' && <span className={s.statSub}>sobre {estabName}</span>}
+          {calc.status === 'prejuizo' && <span className={s.statSub}>{estabName} ganhou</span>}
         </div>
       </div>
 
@@ -260,19 +273,17 @@ export function SoloMode() {
           <p className={s.resultMsg}>👆 Informe o valor pago para calcular seu resultado</p>
         )}
         {calc.status === 'lucro' && (
-          <p className={s.resultMsg}>🎉 A pizzaria saiu perdendo kkkkkk!</p>
+          <p className={s.resultMsg}>🎉 {estabName.charAt(0).toUpperCase() + estabName.slice(1)} saiu perdendo kkkkkk!</p>
         )}
         {calc.status === 'prejuizo' && (
           <p className={s.resultMsg}>
             {state.fatias === 0
-              ? 'Pagou e não comeu nada?! Tenha vergonha >:( !'
-              : `Precisava ter comido mais ${fatiasRestantes} fatiazinhas${
-                  fatiasRestantes !== 1 ? 's' : ''
-                }...`}
+              ? 'Pagou e não consumiu nada?! Tenha vergonha >:( !'
+              : `Precisava ter consumido mais ${formatUnits(fatiasRestantes)}...`}
           </p>
         )}
         {calc.status === 'empate' && (
-          <p className={s.resultMsg}>🤝 Empatou! Nem vc nem a pizzaria.</p>
+          <p className={s.resultMsg}>🤝 Empatou! Nem vc nem {estabName}.</p>
         )}
       </section>
 

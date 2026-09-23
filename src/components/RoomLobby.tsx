@@ -3,6 +3,7 @@ import { createRoom, joinRoom } from '../services/roomService'
 import { isFirebaseConfigured } from '../services/firebase'
 import { FirebaseModal } from './FirebaseModal'
 import { AVATARS, DEFAULT_HOST_AVATAR, DEFAULT_GUEST_AVATAR } from '../avatars'
+import { useBrand } from '../context/BrandContext'
 import type { Room } from '../types'
 import s from '../App.module.css'
 
@@ -12,13 +13,14 @@ interface RoomLobbyProps {
 }
 
 export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
+  const { brand } = useBrand()
   const [tab, setTab] = useState<'create' | 'join'>(initialCode ? 'join' : 'create')
   const [showFirebaseModal, setShowFirebaseModal] = useState(false)
 
   // Create room state
   const [createName, setCreateName] = useState('')
   const [createHostName, setCreateHostName] = useState('')
-  const [createValor, setCreateValor] = useState('69.90')
+  const [createValor, setCreateValor] = useState(() => brand.item.defaultRodizioPrice.toFixed(2))
   const [createEmoji, setCreateEmoji] = useState(DEFAULT_HOST_AVATAR)
 
   // Join room state
@@ -43,10 +45,12 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
     try {
       const parsedValor = parseFloat(createValor.replace(',', '.'))
       const { room, participantId } = await createRoom({
-        hostName: createHostName.trim() || 'Líder do Rodízio',
+        hostName: createHostName.trim() || 'Líder da Mesa',
         emoji: createEmoji,
-        roomName: createName.trim() || 'Rodízio da Galera',
-        valorRodizio: isNaN(parsedValor) || parsedValor <= 0 ? 69.9 : parsedValor,
+        roomName: createName.trim() || `Mesa no ${brand.appName}`,
+        valorRodizio:
+          isNaN(parsedValor) || parsedValor <= 0 ? brand.item.defaultRodizioPrice : parsedValor,
+        precoFatiaReferencia: brand.item.defaultReferencePrice,
       })
       onRoomEntered(room, participantId)
     } catch (err) {
@@ -150,7 +154,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
             <input
               type="text"
               className={s.textInput}
-              placeholder="Ex: Rodízio da Sexta"
+              placeholder="Nome da mesa ou rodízio"
               value={createName}
               onChange={e => setCreateName(e.target.value)}
               maxLength={30}
@@ -165,7 +169,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
                 type="number"
                 step="0.01"
                 className={s.input}
-                placeholder="69,90"
+                placeholder="0,00"
                 value={createValor}
                 onChange={e => setCreateValor(e.target.value)}
                 min="1"
@@ -178,7 +182,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
             <input
               type="text"
               className={s.textInput}
-              placeholder="Ex: Alex Devorador"
+              placeholder="Digite seu apelido"
               value={createHostName}
               onChange={e => setCreateHostName(e.target.value)}
               maxLength={20}
@@ -187,7 +191,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
           </div>
 
           <div className={s.formGroup}>
-            <label className={s.label}>Escolha seu Avatar da Pizza</label>
+            <label className={s.label}>Escolha seu Avatar</label>
             <div className={s.avatarGrid}>
               {AVATARS.map(avatar => (
                 <button
@@ -227,7 +231,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
             <input
               type="text"
               className={`${s.textInput} ${s.codeInput}`}
-              placeholder="Ex: PIZZA"
+              placeholder="Código da sala"
               value={joinCode}
               onChange={e => setJoinCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
               maxLength={6}
@@ -241,7 +245,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
             <input
               type="text"
               className={s.textInput}
-              placeholder="Ex: Bia da Pizza"
+              placeholder="Digite seu apelido"
               value={joinParticipantName}
               onChange={e => setJoinParticipantName(e.target.value)}
               maxLength={20}
@@ -250,7 +254,7 @@ export function RoomLobby({ initialCode = '', onRoomEntered }: RoomLobbyProps) {
           </div>
 
           <div className={s.formGroup}>
-            <label className={s.label}>Escolha seu Avatar da Pizza</label>
+            <label className={s.label}>Escolha seu Avatar</label>
             <div className={s.avatarGrid}>
               {AVATARS.map(avatar => (
                 <button

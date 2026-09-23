@@ -15,8 +15,12 @@ export function formatBRL(value: number): string {
   })
 }
 
-export function calcular({ valorRodizio, fatias }: AppState): Calculation {
+export function calcular(
+  { valorRodizio, fatias }: AppState,
+  precoReferencia: number = PRECO_FATIA_REFERENCIA
+): Calculation {
   const valorPago = valorRodizio
+  const ref = precoReferencia > 0 ? precoReferencia : PRECO_FATIA_REFERENCIA
 
   if (valorPago <= 0) {
     return {
@@ -28,7 +32,7 @@ export function calcular({ valorRodizio, fatias }: AppState): Calculation {
     }
   }
 
-  const fatiasParaEmpatar = Math.ceil(valorPago / PRECO_FATIA_REFERENCIA)
+  const fatiasParaEmpatar = Math.ceil(valorPago / ref)
 
   if (fatias === 0) {
     return {
@@ -41,7 +45,7 @@ export function calcular({ valorRodizio, fatias }: AppState): Calculation {
   }
 
   const porFatia = valorPago / fatias
-  const valorConsumido = fatias * PRECO_FATIA_REFERENCIA
+  const valorConsumido = fatias * ref
   const lucro = valorConsumido - valorPago
 
   let status: Calculation['status']

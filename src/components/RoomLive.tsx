@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { Room } from '../types'
 import {
   updateParticipantSlices,
@@ -9,6 +9,7 @@ import {
 import { formatBRL } from '../utils'
 import { PodiumModal } from './PodiumModal'
 import { AvatarImg } from './AvatarImg'
+import { useBrand } from '../context/BrandContext'
 import s from '../App.module.css'
 
 interface RoomLiveProps {
@@ -18,10 +19,12 @@ interface RoomLiveProps {
 }
 
 export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLiveProps) {
+  const { brand, formatUnits } = useBrand()
   const isFinished = room.status === 'finished'
   const [manualShowPodium, setManualShowPodium] = useState(false)
   const showPodium = isFinished || manualShowPodium
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
+  const [optimisticFatias, setOptimisticFatias] = useState<number | null>(null)
 
   const me = room.participants?.[currentParticipantId]
   const isHost = Boolean(me?.isHost)
@@ -29,20 +32,48 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
   const ranking = useMemo(() => calculateRanking(room), [room])
   const summary = useMemo(() => calculateTableSummary(room), [room])
 
-  // Slice increment/decrement (desativado se o rodízio estiver encerrado)
+  const serverFatias = me?.fatias ?? 0
+  const myFatias = optimisticFatias !== null ? optimisticFatias : serverFatias
+
+  // Sincroniza optimisticFatias assim que a sala atualizar
+  useEffect(() => {
+    if (optimisticFatias !== null && serverFatias === optimisticFatias) {
+      setOptimisticFatias(null)
+    }
+  }, [serverFatias, optimisticFatias])
+
+  // Slice increment/decrement instantâneo e otimista
   const handleSliceChange = async (delta: number) => {
     if (!me || isFinished) return
-    const currentFatias = me.fatias || 0
-    const newFatias = Math.max(0, currentFatias + delta)
-    if (newFatias === currentFatias) return
+    const current = myFatias
+    const newFatias = Math.max(0, current + delta)
+    if (newFatias === current) return
 
-    await updateParticipantSlices({
-      roomCode: room.code,
-      participantId: currentParticipantId,
-      fatias: newFatias,
-      participantName: me.name,
-      participantEmoji: me.emoji,
-    })
+    setOptimisticFatias(newFatias)
+
+    try {
+      await updateParticipantSlices({
+        roomCode: room.code,
+        participantId: currentParticipantId,
+        fatias: newFatias,
+        participantName: me.name,
+        participantEmoji: me.emoji,
+        currentRoom: room,
+      })
+    } catch (err) {
+      console.error('Erro ao atualizar fatias:', err)
+      setOptimisticFatias(null)
+    }
+  }
+
+  // Helper para tempo relativo amigável
+  const formatRelativeTime = (timestamp: number): string => {
+    const diffSec = Math.floor((Date.now() - timestamp) / 1000)
+    if (diffSec < 15) return 'agora'
+    if (diffSec < 60) return `há ${diffSec}s`
+    const diffMin = Math.floor(diffSec / 60)
+    if (diffMin < 60) return `há ${diffMin}m`
+    return 'hoje'
   }
 
   // Copy code or link
@@ -72,7 +103,6 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
   // My stats calculation
   const myRank = ranking.find(p => p.id === currentParticipantId)
   const myCalc = myRank?.calculation
-  const myFatias = me?.fatias || 0
   const fatiasParaEmpatar = myCalc?.fatiasParaEmpatar ?? Math.ceil(room.valorRodizio / room.precoFatiaReferencia)
   const fatiasRestantes = Math.max(0, fatiasParaEmpatar - myFatias)
   const empatou = room.valorRodizio > 0 && fatiasRestantes === 0 && myFatias > 0
@@ -118,18 +148,60 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
         {copyFeedback && <div className={s.copyToast}>✅ {copyFeedback}</div>}
       </div>
 
-      {/* ── FEED DE ATIVIDADES RECENTES ── */}
+      {/* ── FEED DE ATIVIDADES & INTERAÇÕES DA PARTY ── */}
       {recentActivities.length > 0 && (
-        <div className={s.activityTicker}>
-          <span className={s.tickerIcon}>📢</span>
-          <AvatarImg
-            avatarId={recentActivities[0].participantEmoji}
-            className={s.tickerAvatarImg}
-          />
-          <div className={s.tickerText}>
-            <strong>{recentActivities[0].participantName}</strong>{' '}
-            {recentActivities[0].text}
-          </div>
+        <div className={s.activityTickerContainer}>
+          {recentActivities.slice(0, 2).map((act, index) => {
+            const isOvertake = act.type === 'overtake'
+            const isDuo = act.type === 'duo'
+            const isTable = act.type === 'table'
+            const isTie = act.type === 'tie'
+
+            return (
+              <div
+                key={act.id || index}
+                className={`${s.activityTicker} ${
+                  isOvertake
+                    ? s.tickerOvertake
+                    : isDuo
+                    ? s.tickerDuo
+                    : isTable
+                    ? s.tickerTable
+                    : isTie
+                    ? s.tickerTie
+                    : ''
+                }`}
+              >
+                <div className={s.tickerHeaderRow}>
+                  <span className={s.tickerBadge}>
+                    {act.badge || (index === 0 ? '🔥 AO VIVO' : '📢 RECENTE')}
+                  </span>
+                  <span className={s.tickerTime}>
+                    {formatRelativeTime(act.timestamp)}
+                  </span>
+                </div>
+
+                <div className={s.tickerBody}>
+                  <div className={s.tickerAvatarStack}>
+                    <AvatarImg
+                      avatarId={act.participantEmoji}
+                      className={s.tickerAvatarImg}
+                    />
+                    {act.participant2Emoji && (
+                      <AvatarImg
+                        avatarId={act.participant2Emoji}
+                        className={`${s.tickerAvatarImg} ${s.tickerAvatar2}`}
+                      />
+                    )}
+                  </div>
+
+                  <div className={s.tickerText}>
+                    <strong>{act.participantName}</strong> {act.text}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -151,7 +223,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
             ) : empatou ? (
               <span className={s.tagGreen}>Empatou! 😎</span>
             ) : (
-              <span className={s.tagRed}>Faltam {fatiasRestantes} p/ empatar</span>
+              <span className={s.tagRed}>Faltam {formatUnits(fatiasRestantes)} p/ empatar</span>
             )}
           </div>
         </div>
@@ -162,21 +234,23 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
             className={`${s.cBtn} ${s.cBtnMinus} ${s.cBtnLarge}`}
             onClick={() => handleSliceChange(-1)}
             disabled={myFatias === 0 || isFinished}
-            aria-label="Remover fatia"
+            aria-label={`Remover ${brand.item.singular}`}
           >
             −
           </button>
 
           <div className={s.myPlateNumWrapper}>
             <span className={s.myPlateNum}>{myFatias}</span>
-            <span className={s.myPlateUnit}>fatias comidas</span>
+            <span className={s.myPlateUnit}>
+              {brand.item.plural} comid{brand.item.unitGender === 'o' ? 'os' : 'as'}
+            </span>
           </div>
 
           <button
             className={`${s.cBtn} ${s.cBtnPlus} ${s.cBtnLarge}`}
             onClick={() => handleSliceChange(1)}
             disabled={isFinished}
-            aria-label="Adicionar fatia"
+            aria-label={`Adicionar ${brand.item.singular}`}
           >
             +
           </button>
@@ -184,10 +258,12 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
 
         <p className={s.myPlateHint}>
           {isFinished ? (
-            <span>🔒 Rodízio encerrado pelo líder da mesa. Fatias travadas!</span>
+            <span>
+              🔒 Rodízio encerrado pelo líder da mesa. {brand.item.plural.charAt(0).toUpperCase() + brand.item.plural.slice(1)} travad{brand.item.unitGender === 'o' ? 'os' : 'as'}!
+            </span>
           ) : (
             <>
-              💡 Toque em <strong>+</strong> a cada nova fatia que o garçom deixar no seu prato!
+              💡 Toque em <strong>+</strong> a cada nov{brand.item.unitGender} {brand.item.singular} que o garçom deixar no seu prato!
             </>
           )}
         </p>
@@ -233,7 +309,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
                     </div>
                     <div className={s.rankStats}>
                       <span className={s.rankFatiasVal}>{participant.fatias}</span>
-                      <span className={s.rankFatiasLabel}>fatias</span>
+                      <span className={s.rankFatiasLabel}>{brand.item.plural}</span>
                     </div>
                   </div>
 
@@ -274,11 +350,16 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
 
       {/* ── ESTATÍSTICAS COLETIVAS DA MESA ── */}
       <section className={s.tableStatsCard}>
-        <h4 className={s.tableStatsTitle}>🍕 Rombo Coletivo na Pizzaria</h4>
+        <h4 className={s.tableStatsTitle}>
+          {brand.item.emoji} Rombo Coletivo no {brand.establishmentType}
+        </h4>
         <div className={s.tableStatsGrid}>
           <div className={s.tableStatBox}>
             <span className={s.tableStatNum}>{summary.totalFatias}</span>
-            <span className={s.tableStatLabel}>Fatias Devoradas</span>
+            <span className={s.tableStatLabel}>
+              {brand.item.plural.charAt(0).toUpperCase() + brand.item.plural.slice(1)} Devorad
+              {brand.item.unitGender === 'o' ? 'os' : 'as'}
+            </span>
           </div>
           <div className={s.tableStatBox}>
             <span className={s.tableStatNum}>{summary.mediaFatias}</span>

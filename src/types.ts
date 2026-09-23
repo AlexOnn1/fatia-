@@ -39,6 +39,10 @@ export interface RoomActivity {
   participantName: string
   participantEmoji: string
   text: string
+  participant2Name?: string
+  participant2Emoji?: string
+  type?: 'milestone' | 'overtake' | 'tie' | 'duo' | 'table' | 'join'
+  badge?: string
 }
 
 export interface RankedParticipant extends Participant {
@@ -62,4 +66,57 @@ export interface PodiumAward {
   recipientName: string
   recipientEmoji: string
   stat: string
+}
+
+export interface BrandTheme {
+  primary: string
+  primaryDark: string
+  secondary: string
+  accent: string
+  bg: string
+  surface: string
+  surfaceAlt: string
+  dark: string
+  darkMid: string
+  fontFamily?: string
+}
+
+export interface ItemConfig {
+  singular: string
+  plural: string
+  unitGender: 'a' | 'o'
+  emoji: string
+  defaultReferencePrice: number
+  referenceNote: string
+  defaultRodizioPrice: number
+}
+
+export interface SocialLink {
+  type: 'instagram' | 'whatsapp' | 'website' | 'maps' | 'github' | 'linkedin' | 'email'
+  url: string
+  label?: string
+}
+
+export interface BrandFooter {
+  quote: string
+  establishmentName: string
+  showDevCredits: boolean
+  devName?: string
+  devUrl?: string
+  socialLinks?: SocialLink[]
+}
+
+export interface TenantConfig {
+  id: string
+  appName: string
+  slug: string
+  tagline: string
+  slogan: string
+  establishmentType: string
+  appUrl: string
+  logoEmoji: string
+  logoImageUrl?: string
+  theme: BrandTheme
+  item: ItemConfig
+  footer: BrandFooter
 }
