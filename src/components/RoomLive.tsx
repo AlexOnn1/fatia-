@@ -18,7 +18,9 @@ interface RoomLiveProps {
 }
 
 export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLiveProps) {
-  const [showPodium, setShowPodium] = useState(room.status === 'finished')
+  const isFinished = room.status === 'finished'
+  const [manualShowPodium, setManualShowPodium] = useState(false)
+  const showPodium = isFinished || manualShowPodium
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
   const me = room.participants?.[currentParticipantId]
@@ -27,9 +29,9 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
   const ranking = useMemo(() => calculateRanking(room), [room])
   const summary = useMemo(() => calculateTableSummary(room), [room])
 
-  // Slice increment/decrement
+  // Slice increment/decrement (desativado se o rodízio estiver encerrado)
   const handleSliceChange = async (delta: number) => {
-    if (!me) return
+    if (!me || isFinished) return
     const currentFatias = me.fatias || 0
     const newFatias = Math.max(0, currentFatias + delta)
     if (newFatias === currentFatias) return
@@ -58,9 +60,9 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
   }
 
   const handleFinish = async () => {
-    if (confirm('Deseja encerrar o rodízio e exibir o pódio de campeões para a mesa?')) {
+    if (!isHost) return
+    if (confirm('Deseja encerrar o rodízio e travar a tela de resultado para todos na mesa?')) {
       await finishRoom(room.code)
-      setShowPodium(true)
     }
   }
 
@@ -89,7 +91,9 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
       <div className={s.roomHeaderCard}>
         <div className={s.roomHeaderTop}>
           <div>
-            <span className={s.roomLiveBadge}>🔴 AO VIVO NA MESA</span>
+            <span className={isFinished ? s.roomFinishedBadge : s.roomLiveBadge}>
+              {isFinished ? '🔒 RODÍZIO ENCERRADO' : '🔴 AO VIVO NA MESA'}
+            </span>
             <h2 className={s.roomNameTitle}>{room.name}</h2>
           </div>
           <div className={s.roomCodeBox} onClick={handleCopyCode} title="Clique para copiar código">
@@ -157,7 +161,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           <button
             className={`${s.cBtn} ${s.cBtnMinus} ${s.cBtnLarge}`}
             onClick={() => handleSliceChange(-1)}
-            disabled={myFatias === 0}
+            disabled={myFatias === 0 || isFinished}
             aria-label="Remover fatia"
           >
             −
@@ -171,6 +175,7 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           <button
             className={`${s.cBtn} ${s.cBtnPlus} ${s.cBtnLarge}`}
             onClick={() => handleSliceChange(1)}
+            disabled={isFinished}
             aria-label="Adicionar fatia"
           >
             +
@@ -178,7 +183,13 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
         </div>
 
         <p className={s.myPlateHint}>
-          💡 Toque em <strong>+</strong> a cada nova fatia que o garçom deixar no seu prato!
+          {isFinished ? (
+            <span>🔒 Rodízio encerrado pelo líder da mesa. Fatias travadas!</span>
+          ) : (
+            <>
+              💡 Toque em <strong>+</strong> a cada nova fatia que o garçom deixar no seu prato!
+            </>
+          )}
         </p>
       </section>
 
@@ -292,23 +303,40 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
 
       {/* ── BOTÕES DE AÇÃO ── */}
       <div className={s.roomActions}>
-        <button className={s.finishBtn} onClick={handleFinish}>
-          🏁 Encerrar Rodízio & Ver Pódio 🏆
-        </button>
+        {isHost ? (
+          isFinished ? (
+            <button className={s.finishBtn} onClick={() => setManualShowPodium(true)}>
+              🏆 Ver Pódio Final Novamente
+            </button>
+          ) : (
+            <button className={s.finishBtn} onClick={handleFinish}>
+              🏁 Encerrar Rodízio & Ver Pódio 🏆
+            </button>
+          )
+        ) : isFinished ? (
+          <button className={s.finishBtn} onClick={() => setManualShowPodium(true)}>
+            🏆 Ver Pódio dos Campeões
+          </button>
+        ) : (
+          <div className={s.guestNoticeBox}>
+            <span>👑 Apenas o criador da sala pode encerrar o rodízio</span>
+          </div>
+        )}
 
         <button className={s.leaveBtn} onClick={onLeaveRoom}>
           🚪 Sair da Mesa
         </button>
       </div>
 
-      {/* ── MODAL DO PÓDIO ── */}
+      {/* ── MODAL DO PÓDIO (TRAVADO QUANDO FINALIZADO) ── */}
       {showPodium && (
         <PodiumModal
           room={room}
           ranking={ranking}
           summary={summary}
           isHost={isHost}
-          onClose={() => setShowPodium(false)}
+          isLocked={isFinished}
+          onClose={() => setManualShowPodium(false)}
           onLeaveRoom={onLeaveRoom}
         />
       )}

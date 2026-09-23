@@ -1731,6 +1731,67 @@
   transform: translateY(-2px);
 }
 
+.secondaryShareRow {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.downloadImgsBtn {
+  flex: 1;
+  padding: 12px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--surface);
+  color: var(--dark);
+  border: 1.5px solid var(--border-mid);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.downloadImgsBtn:hover {
+  background: var(--surface-alt);
+  border-color: var(--orange);
+}
+
+.downloadImgsBtn:disabled,
+.shareWhatsappBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.textOnlyBtn {
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  color: var(--dark-mid);
+  border: 1.5px solid var(--border-mid);
+  border-radius: var(--r);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.textOnlyBtn:hover {
+  background: var(--surface-alt);
+  color: var(--dark);
+}
+
+.shareStatusToast {
+  background: #FFF8E6;
+  border: 1px solid var(--orange);
+  color: var(--dark);
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  animation: fadeIn 0.2s ease;
+}
+
 /* ── BARRA DE CONEXÃO NO LOBBY ── */
 .connectionBar {
   display: flex;
@@ -2065,6 +2126,53 @@
 .awardRecipientStat {
   color: var(--dark-mid);
   font-size: 11px;
+}
+
+/* ── STATUS TRAVADO / FINALIZADO ── */
+.roomFinishedBadge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+  background: var(--dark);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.guestNoticeBox {
+  background: var(--surface-alt);
+  border: 1.5px dashed var(--border-mid);
+  padding: 12px 14px;
+  border-radius: var(--r);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark-mid);
+}
+
+.podiumLockedNotice {
+  background: #FFF8E6;
+  border: 1.5px solid #FFD166;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.podiumLockedNotice strong {
+  font-size: 13px;
+  color: #B25E00;
+}
+
+.podiumLockedNotice span {
+  font-size: 11px;
+  color: var(--dark-mid);
+  font-weight: 600;
 }
 
 
