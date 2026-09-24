@@ -9,7 +9,12 @@ import {
 import { formatBRL } from '../utils'
 import { PodiumModal } from './PodiumModal'
 import { AvatarImg } from './AvatarImg'
+import { QrCodeModal } from './QrCodeModal'
+import { LiveReactions } from './LiveReactions'
+import { BackgroundFallingItems } from './BackgroundFallingItems'
 import { useBrand } from '../context/BrandContext'
+import { triggerHaptic } from '../utils/haptics'
+import { playCrunchSound } from '../services/soundEffects'
 import s from '../App.module.css'
 
 interface RoomLiveProps {
@@ -19,12 +24,13 @@ interface RoomLiveProps {
 }
 
 export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLiveProps) {
-  const { brand, formatUnits } = useBrand()
+  const { brand, formatUnits, setUserFinancialStatus } = useBrand()
   const isFinished = room.status === 'finished'
   const [manualShowPodium, setManualShowPodium] = useState(false)
   const showPodium = isFinished || manualShowPodium
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const [optimisticFatias, setOptimisticFatias] = useState<number | null>(null)
+  const [showQrModal, setShowQrModal] = useState(false)
 
   const me = room.participants?.[currentParticipantId]
   const isHost = Boolean(me?.isHost)
@@ -42,12 +48,57 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
     }
   }, [serverFatias, optimisticFatias])
 
-  // Slice increment/decrement instantâneo e otimista
+  // My stats calculation
+  const myRank = ranking.find(p => p.id === currentParticipantId)
+  const myCalc = myRank?.calculation
+  const fatiasParaEmpatar = myCalc?.fatiasParaEmpatar ?? Math.ceil(room.valorRodizio / room.precoFatiaReferencia)
+  const fatiasRestantes = Math.max(0, fatiasParaEmpatar - myFatias)
+  const empatou = room.valorRodizio > 0 && fatiasRestantes === 0 && myFatias > 0
+
+  // Sincronizar status financeiro do usuário com o $ do Logo
+  useEffect(() => {
+    if (!myCalc || myFatias === 0) {
+      setUserFinancialStatus('neutral')
+    } else {
+      setUserFinancialStatus(myCalc.status)
+    }
+  }, [myCalc?.status, myFatias, setUserFinancialStatus])
+
+  // Limpeza ao sair da sala
+  useEffect(() => {
+    return () => {
+      setUserFinancialStatus('neutral')
+    }
+  }, [setUserFinancialStatus])
+
+  // Primeiro participante que empatou ou lucrou na mesa
+  const firstProfitId = useMemo(() => {
+    return ranking.find(
+      p =>
+        p.fatias > 0 &&
+        (p.calculation?.status === 'lucro' ||
+          (p.calculation?.fatiasParaEmpatar && p.fatias >= p.calculation.fatiasParaEmpatar))
+    )?.id
+  }, [ranking])
+
+  // Slice increment/decrement instantâneo, otimista, com haptics e som crocante
   const handleSliceChange = async (delta: number) => {
     if (!me || isFinished) return
     const current = myFatias
     const newFatias = Math.max(0, current + delta)
     if (newFatias === current) return
+
+    // Haptics & Som
+    if (delta > 0) {
+      playCrunchSound()
+      if (fatiasParaEmpatar > 0 && current < fatiasParaEmpatar && newFatias >= fatiasParaEmpatar) {
+        triggerHaptic('success')
+      } else {
+        triggerHaptic('tap')
+      }
+    } else {
+      triggerHaptic('light')
+    }
 
     setOptimisticFatias(newFatias)
 
@@ -100,13 +151,6 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
   // Max slices at the table for proportional bars
   const maxTableFatias = Math.max(1, ranking[0]?.fatias || 1)
 
-  // My stats calculation
-  const myRank = ranking.find(p => p.id === currentParticipantId)
-  const myCalc = myRank?.calculation
-  const fatiasParaEmpatar = myCalc?.fatiasParaEmpatar ?? Math.ceil(room.valorRodizio / room.precoFatiaReferencia)
-  const fatiasRestantes = Math.max(0, fatiasParaEmpatar - myFatias)
-  const empatou = room.valorRodizio > 0 && fatiasRestantes === 0 && myFatias > 0
-
   // Recent activities
   const recentActivities = useMemo(() => {
     if (!room.activities) return []
@@ -142,6 +186,14 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           </span>
           <button className={s.copyLinkBtn} onClick={handleCopyLink}>
             🔗 Convidar Amigos
+          </button>
+          <button
+            type="button"
+            className={s.qrTriggerBtn}
+            onClick={() => setShowQrModal(true)}
+            title="Abrir QR Code para a mesa escanear com a câmera"
+          >
+            📷 QR Code
           </button>
         </div>
 
@@ -256,6 +308,37 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           </button>
         </div>
 
+        {/* ATALHOS DE SOMA RÁPIDA */}
+        {!isFinished && (
+          <div className={s.quickAddRow}>
+            <span className={s.quickAddLabel}>Soma rápida:</span>
+            <button
+              type="button"
+              className={s.quickAddBtn}
+              onClick={() => handleSliceChange(1)}
+              title={`Adicionar +1 ${brand.item.singular}`}
+            >
+              +1
+            </button>
+            <button
+              type="button"
+              className={s.quickAddBtn}
+              onClick={() => handleSliceChange(2)}
+              title={`Adicionar +2 ${brand.item.plural}`}
+            >
+              +2
+            </button>
+            <button
+              type="button"
+              className={s.quickAddBtn}
+              onClick={() => handleSliceChange(3)}
+              title={`Adicionar +3 ${brand.item.plural}`}
+            >
+              +3
+            </button>
+          </div>
+        )}
+
         <p className={s.myPlateHint}>
           {isFinished ? (
             <span>
@@ -305,6 +388,16 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
                       <AvatarImg avatarId={participant.emoji} className={s.rankAvatarImg} />
                       <span className={s.rankName}>
                         {participant.name} {isMe && <strong className={s.youTag}>(Você)</strong>}
+                        {isLeader && participant.fatias >= 8 && (
+                          <span className={s.badgeTrator} title="Trator da Rodada (+8 fatias consumidas!)">
+                            🚜 Trator
+                          </span>
+                        )}
+                        {participant.id === firstProfitId && (
+                          <span className={s.badgePioneiro} title="Primeiro da mesa a empatar/lucrar!">
+                            🚀 No Lucro
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className={s.rankStats}>
@@ -419,6 +512,28 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           isLocked={isFinished}
           onClose={() => setManualShowPodium(false)}
           onLeaveRoom={onLeaveRoom}
+        />
+      )}
+
+      {/* ── REAÇÕES FLUTUANTES AO VIVO & DOCK DE REAÇÕES ── */}
+      <LiveReactions
+        roomCode={room.code}
+        senderName={me?.name || 'Amigo'}
+        isFinished={isFinished}
+      />
+
+      {/* ── CHUVA DE FATIAS NO FUNDO (COOKIE CLICKER) ── */}
+      <BackgroundFallingItems
+        totalFatias={summary.totalFatias}
+        groupSize={summary.participantesCount}
+      />
+
+      {/* ── MODAL DE QR CODE DA SALA ── */}
+      {showQrModal && (
+        <QrCodeModal
+          roomCode={room.code}
+          roomName={room.name}
+          onClose={() => setShowQrModal(false)}
         />
       )}
     </div>

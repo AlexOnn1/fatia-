@@ -2,17 +2,22 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import type { TenantConfig } from '../types'
 import { getActiveTenant, TENANT_REGISTRY } from '../config/tenantConfig'
 
+export type FinancialStatus = 'neutral' | 'neutro' | 'prejuizo' | 'empate' | 'lucro'
+
 interface BrandContextType {
   brand: TenantConfig
   formatUnits: (count: number) => string
   formatConsumed: (count: number) => string
   setTenantId: (id: string) => void
+  userFinancialStatus: FinancialStatus
+  setUserFinancialStatus: (status: FinancialStatus) => void
 }
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined)
 
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<TenantConfig>(() => getActiveTenant())
+  const [userFinancialStatus, setUserFinancialStatus] = useState<FinancialStatus>('neutral')
 
   const setTenantId = (id: string) => {
     if (TENANT_REGISTRY[id]) {
@@ -62,8 +67,15 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   }, [brand.item.singular, brand.item.plural, brand.item.unitGender])
 
   const value = useMemo(
-    () => ({ brand, formatUnits, formatConsumed, setTenantId }),
-    [brand, formatUnits, formatConsumed]
+    () => ({
+      brand,
+      formatUnits,
+      formatConsumed,
+      setTenantId,
+      userFinancialStatus,
+      setUserFinancialStatus,
+    }),
+    [brand, formatUnits, formatConsumed, userFinancialStatus]
   )
 
   return <BrandContext.Provider value={value}>{children}</BrandContext.Provider>

@@ -871,3 +871,114 @@ export function generateWhatsAppShareText(
   return lines.join('\n')
 }
 
+// ── REAÇÕES FLUTUANTES EM TEMPO REAL ──────────────────────────
+export interface LiveReaction {
+  id: string
+  emoji: string
+  senderName: string
+  timestamp: number
+}
+
+export async function sendRoomReaction(
+  roomCode: string,
+  emoji: string,
+  senderName: string
+): Promise<void> {
+  const reactionId = 'react_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7)
+  const reaction: LiveReaction = {
+    id: reactionId,
+    emoji,
+    senderName,
+    timestamp: Date.now(),
+  }
+
+  // 1. Notificar canal local e abas no mesmo navegador
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('fatia_local_reaction', { detail: reaction }))
+  }
+  const channel = getLocalChannel(roomCode)
+  if (channel) {
+    try {
+      channel.postMessage({ type: 'reaction', reaction })
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Se Firebase estiver conectado, persistir efemeramente no banco
+  if (isFirebaseConfigured && db) {
+    try {
+      const reactionsRef = ref(db, `rooms/${roomCode}/reactions/${reactionId}`)
+      await set(reactionsRef, reaction)
+    } catch (err) {
+      console.warn('Erro ao enviar reação no Firebase:', err)
+    }
+  }
+}
+
+export function subscribeToRoomReactions(
+  roomCode: string,
+  onReaction: (reaction: LiveReaction) => void
+): () => void {
+  const seenIds = new Set<string>()
+
+  // 1. Escuta local via CustomEvent
+  const handleLocalEvent = (e: Event) => {
+    const custom = e as CustomEvent<LiveReaction>
+    if (custom.detail && !seenIds.has(custom.detail.id)) {
+      seenIds.add(custom.detail.id)
+      onReaction(custom.detail)
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('fatia_local_reaction', handleLocalEvent)
+  }
+
+  // 2. Escuta via BroadcastChannel
+  const channel = getLocalChannel(roomCode)
+  const handleChannelMsg = (event: MessageEvent) => {
+    if (event.data?.type === 'reaction' && event.data.reaction) {
+      const react = event.data.reaction as LiveReaction
+      if (!seenIds.has(react.id)) {
+        seenIds.add(react.id)
+        onReaction(react)
+      }
+    }
+  }
+  if (channel) {
+    channel.addEventListener('message', handleChannelMsg)
+  }
+
+  // 3. Escuta via Firebase Realtime Database
+  let offFirebase: (() => void) | null = null
+  if (isFirebaseConfigured && db) {
+    const reactionsRef = ref(db, `rooms/${roomCode}/reactions`)
+    const unsub = onValue(reactionsRef, snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.val() as Record<string, LiveReaction>
+        const now = Date.now()
+        Object.values(data).forEach(react => {
+          // Reações dos últimos 8 segundos
+          if (react && react.id && !seenIds.has(react.id) && now - react.timestamp < 8000) {
+            seenIds.add(react.id)
+            onReaction(react)
+          }
+        })
+      }
+    })
+    offFirebase = () => off(reactionsRef, 'value', unsub)
+  }
+
+  return () => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('fatia_local_reaction', handleLocalEvent)
+    }
+    if (channel) {
+      channel.removeEventListener('message', handleChannelMsg)
+    }
+    if (offFirebase) {
+      offFirebase()
+    }
+  }
+}
+

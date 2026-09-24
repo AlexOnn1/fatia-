@@ -1,14 +1,17 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import type { AppState } from '../types'
 import { calcular, formatBRL } from '../utils'
 import { useBrand } from '../context/BrandContext'
+import { triggerHaptic } from '../utils/haptics'
+import { playCrunchSound } from '../services/soundEffects'
+import { BackgroundFallingItems } from './BackgroundFallingItems'
 import s from '../App.module.css'
 
 const INITIAL_STATE: AppState = { valorRodizio: 0, fatias: 0 }
 const MAX_VALOR_DIGITS = 7 // cobre até R$ 9.999,99
 
 export function SoloMode() {
-  const { brand, formatUnits } = useBrand()
+  const { brand, formatUnits, setUserFinancialStatus } = useBrand()
   const [state, setState] = useState<AppState>(INITIAL_STATE)
   const [inputValue, setInputValue] = useState<string>('')
   const [editing, setEditing] = useState(false)
@@ -16,6 +19,22 @@ export function SoloMode() {
   const [fatiasInput, setFatiasInput] = useState<string>('')
 
   const calc = calcular(state, brand.item.defaultReferencePrice)
+
+  // ── Sincronizar status financeiro com o $ do Logo ──
+  useEffect(() => {
+    if (state.valorRodizio <= 0 || state.fatias === 0) {
+      setUserFinancialStatus('neutral')
+    } else {
+      setUserFinancialStatus(calc.status)
+    }
+  }, [state.valorRodizio, state.fatias, calc.status, setUserFinancialStatus])
+
+  // Limpar ao desmontar
+  useEffect(() => {
+    return () => {
+      setUserFinancialStatus('neutral')
+    }
+  }, [setUserFinancialStatus])
 
   // ── Valor pago ──────────────────────────────────
   const handleValorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,14 +60,42 @@ export function SoloMode() {
     setFatiasInput('')
   }, [])
 
-  // ── Botões ───────────────────────────────────────
+  // ── Botões com Haptics ────────────────────
   const handleMinus = useCallback(() => {
-    setState(prev => ({ ...prev, fatias: Math.max(0, prev.fatias - 1) }))
+    setState(prev => {
+      if (prev.fatias === 0) return prev
+      triggerHaptic('light')
+      return { ...prev, fatias: Math.max(0, prev.fatias - 1) }
+    })
   }, [])
 
   const handlePlus = useCallback(() => {
-    setState(prev => ({ ...prev, fatias: prev.fatias + 1 }))
-  }, [])
+    setState(prev => {
+      const nextFatias = prev.fatias + 1
+      playCrunchSound()
+      const fatiasParaEmpatar = calc.fatiasParaEmpatar ?? 0
+      if (fatiasParaEmpatar > 0 && prev.fatias < fatiasParaEmpatar && nextFatias >= fatiasParaEmpatar) {
+        triggerHaptic('success')
+      } else {
+        triggerHaptic('tap')
+      }
+      return { ...prev, fatias: nextFatias }
+    })
+  }, [calc.fatiasParaEmpatar])
+
+  const handleAddQuick = useCallback((amount: number) => {
+    setState(prev => {
+      const nextFatias = prev.fatias + amount
+      playCrunchSound()
+      const fatiasParaEmpatar = calc.fatiasParaEmpatar ?? 0
+      if (fatiasParaEmpatar > 0 && prev.fatias < fatiasParaEmpatar && nextFatias >= fatiasParaEmpatar) {
+        triggerHaptic('success')
+      } else {
+        triggerHaptic('tap')
+      }
+      return { ...prev, fatias: nextFatias }
+    })
+  }, [calc.fatiasParaEmpatar])
 
   const handleReset = useCallback(() => {
     setState(INITIAL_STATE)
@@ -56,7 +103,8 @@ export function SoloMode() {
     setFatiasInput('')
     setEditing(false)
     setEditingFatias(false)
-  }, [])
+    setUserFinancialStatus('neutral')
+  }, [setUserFinancialStatus])
 
   // ── Cálculos auxiliares ──────────────────────────
   const fatiasParaEmpatar = calc.fatiasParaEmpatar ?? 0
@@ -178,6 +226,35 @@ export function SoloMode() {
           </button>
         </div>
 
+        {/* ATALHOS DE SOMA RÁPIDA */}
+        <div className={s.quickAddRow}>
+          <span className={s.quickAddLabel}>Soma rápida:</span>
+          <button
+            type="button"
+            className={s.quickAddBtn}
+            onClick={() => handleAddQuick(1)}
+            title={`Adicionar +1 ${brand.item.singular}`}
+          >
+            +1
+          </button>
+          <button
+            type="button"
+            className={s.quickAddBtn}
+            onClick={() => handleAddQuick(2)}
+            title={`Adicionar +2 ${brand.item.plural}`}
+          >
+            +2
+          </button>
+          <button
+            type="button"
+            className={s.quickAddBtn}
+            onClick={() => handleAddQuick(3)}
+            title={`Adicionar +3 ${brand.item.plural}`}
+          >
+            +3
+          </button>
+        </div>
+
         {/* BREAKEVEN PILL */}
         {state.valorRodizio > 0 && (
           <div className={`${s.breakevenPill} ${empatou ? s.breakevenDone : ''}`}>
@@ -291,6 +368,9 @@ export function SoloMode() {
       <button className={s.reset} onClick={handleReset}>
         🗑️ Reiniciar
       </button>
+
+      {/* ── CHUVA DE FATIAS NO FUNDO (COOKIE CLICKER) ── */}
+      <BackgroundFallingItems totalFatias={state.fatias} groupSize={1} />
     </div>
   )
 }

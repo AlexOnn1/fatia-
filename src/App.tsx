@@ -18,6 +18,7 @@ import { BrandProvider, useBrand } from './context/BrandContext'
 import { SoloMode } from './components/SoloMode'
 import { RoomLobby } from './components/RoomLobby'
 import { RoomLive } from './components/RoomLive'
+import { useWakeLock } from './utils/wakeLock'
 import s from './App.module.css'
 
 function renderSocialIcon(link: SocialLink) {
@@ -61,11 +62,19 @@ function getSocialHoverColor(type: SocialLink['type']) {
 }
 
 function AppContent() {
-  const { brand } = useBrand()
+  const { brand, userFinancialStatus } = useBrand()
+  const { isSupported: isWakeSupported, isActive: isWakeActive, toggleWakeLock } = useWakeLock()
   const [appMode, setAppMode] = useState<'solo' | 'room'>('solo')
   const [activeRoom, setActiveRoom] = useState<Room | null>(null)
   const [currentParticipantId, setCurrentParticipantId] = useState<string | null>(null)
   const [urlRoomCode, setUrlRoomCode] = useState<string>('')
+
+  const dollarStatusClass =
+    userFinancialStatus === 'lucro'
+      ? s.dollarGreen
+      : userFinancialStatus === 'prejuizo'
+      ? s.dollarRed
+      : ''
 
   // 1. Detectar parâmetro ?sala=XYZ na URL ou sessão salva
   useEffect(() => {
@@ -152,7 +161,18 @@ function AppContent() {
               {brand.appName.endsWith('$') ? (
                 <>
                   {brand.appName.slice(0, -1)}
-                  <span className={s.dollar}>$</span>
+                  <span
+                    className={`${s.dollar} ${dollarStatusClass}`}
+                    title={
+                      userFinancialStatus === 'lucro'
+                        ? 'Lucro no Rodízio! 😎'
+                        : userFinancialStatus === 'prejuizo'
+                        ? 'No Prejuízo (coma mais!) 🍕'
+                        : 'Zero a zero / Inicial'
+                    }
+                  >
+                    $
+                  </span>
                 </>
               ) : (
                 brand.appName
@@ -162,6 +182,25 @@ function AppContent() {
           </div>
         </div>
         <p className={s.slogan}>{brand.slogan}</p>
+
+        {/* ── BOTÃO WAKE LOCK (TELA SEMPRE ATIVA NO MOBILE) ── */}
+        {isWakeSupported && (
+          <div style={{ marginTop: '6px', marginBottom: '2px', display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              className={`${s.wakeLockToggle} ${isWakeActive ? s.wakeLockActive : ''}`}
+              onClick={toggleWakeLock}
+              title={
+                isWakeActive
+                  ? 'A tela do celular permanecerá ligada enquanto você come. Toque para desativar.'
+                  : 'Toque para evitar que a tela do celular apague enquanto você come.'
+              }
+            >
+              <span>{isWakeActive ? '💡' : '💤'}</span>
+              <span>{isWakeActive ? 'Tela Sempre Ativa' : 'Manter Tela Ativa'}</span>
+            </button>
+          </div>
+        )}
 
         {/* ── SELETOR DE MODO: SOLO vs MODO GALERA ── */}
         <div className={s.modeSelector}>

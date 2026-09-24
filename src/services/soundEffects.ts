@@ -417,3 +417,82 @@ export function triggerHaptic(pattern: number | number[] = 60) {
     // ignore
   }
 }
+
+/**
+ * Sintetiza um som crocante de mordida ("Crunch / Bite")
+ * Ideal para quando o participante adiciona uma fatia/item ao prato.
+ */
+export function playCrunchSound() {
+  const ctx = getAudioContext()
+  if (!ctx || muted) return
+
+  try {
+    const now = ctx.currentTime
+
+    // 1. Criar buffer de ruído branco para a crocância
+    const bufferSize = Math.floor(ctx.sampleRate * 0.12)
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.035))
+    }
+
+    const noiseSource = ctx.createBufferSource()
+    noiseSource.buffer = buffer
+
+    // Filtro passa-faixa para destacar a textura crocante
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.setValueAtTime(2200, now)
+    filter.frequency.exponentialRampToValueAtTime(800, now + 0.1)
+    filter.Q.value = 1.5
+
+    const noiseGain = ctx.createGain()
+    noiseGain.gain.setValueAtTime(0.32, now)
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11)
+
+    noiseSource.connect(filter)
+    filter.connect(noiseGain)
+    noiseGain.connect(ctx.destination)
+
+    noiseSource.start(now)
+    noiseSource.stop(now + 0.12)
+
+    // 2. Tom grave subjacente simulando o impacto da mordida
+    const osc = ctx.createOscillator()
+    const oscGain = ctx.createGain()
+
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(240, now)
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.09)
+
+    oscGain.gain.setValueAtTime(0.25, now)
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09)
+
+    osc.connect(oscGain)
+    oscGain.connect(ctx.destination)
+
+    osc.start(now)
+    osc.stop(now + 0.09)
+
+    // 3. Mini estalo secundário ("crackle" aos 35ms)
+    setTimeout(() => {
+      const ctx2 = getAudioContext()
+      if (!ctx2 || muted) return
+      const now2 = ctx2.currentTime
+      const osc2 = ctx2.createOscillator()
+      const gain2 = ctx2.createGain()
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(1400, now2)
+      osc2.frequency.exponentialRampToValueAtTime(400, now2 + 0.04)
+      gain2.gain.setValueAtTime(0.16, now2)
+      gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.04)
+      osc2.connect(gain2)
+      gain2.connect(ctx2.destination)
+      osc2.start(now2)
+      osc2.stop(now2 + 0.04)
+    }, 35)
+  } catch {
+    // ignore
+  }
+}

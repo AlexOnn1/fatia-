@@ -46,26 +46,28 @@
   letter-spacing: -1px;
 }
 
-/* The $ — big, bold, animated */
+/* The $ — big, bold, animated e dinâmico conforme lucro/prejuízo */
 .dollar {
   font-family: var(--font);
   font-size: 60px;
   font-weight: 700;
-  color: var(--orange);
+  color: #e8dcc4; /* Bege neutro quando 0 a 0 / inicial */
   line-height: 1;
   display: inline-block;
-  transition: color 0.4s ease, transform 0.25s ease;
+  transition: color 0.35s ease, transform 0.25s ease, text-shadow 0.35s ease;
   transform-origin: bottom center;
 }
 
 .dollarRed {
-  color: var(--red);
+  color: var(--red) !important;
   animation: dollarPulse 0.35s ease;
+  text-shadow: 0 0 14px rgba(230, 57, 70, 0.5);
 }
 
 .dollarGreen {
-  color: var(--green);
+  color: var(--green) !important;
   animation: dollarPulse 0.35s ease;
+  text-shadow: 0 0 14px rgba(46, 204, 113, 0.5);
 }
 
 @keyframes dollarPulse {
@@ -2614,6 +2616,496 @@
   color: var(--dark-mid);
   font-weight: 600;
 }
+
+/* ── Categoria 1: Usabilidade em Mesa ── */
+
+/* 1. Toggle de Wake Lock (Tela sempre ativa) */
+.wakeLockToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wakeLockToggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.wakeLockActive {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  color: #fcd34d !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+/* 2. Atalhos de Adição Rápida (+1, +2, +3) — Alto Contraste & Estilo Tátil */
+.quickAddRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.quickAddLabel {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--dark-mid);
+}
+
+.quickAddBtn {
+  background: var(--surface-alt, #FFF8F0);
+  border: 1.5px solid var(--border-mid, rgba(45, 45, 45, 0.22));
+  color: var(--dark, #2D2D2D);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 6px rgba(45, 45, 45, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quickAddBtn:hover:not(:disabled) {
+  background: var(--green-light, rgba(46, 204, 113, 0.15));
+  border-color: var(--green, #2ECC71);
+  color: var(--green-dark, #1fa355);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.28);
+}
+
+.quickAddBtn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--green, #2ECC71);
+  border-color: var(--green, #2ECC71);
+  color: #ffffff;
+}
+
+.quickAddBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════
+   CATEGORIA 2: GAMIFICAÇÃO & INTERATIVIDADE COLETIVA
+   ══════════════════════════════════════════════════════ */
+
+/* 1. Modal QR Code */
+.qrModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10000;
+  animation: qrFadeIn 0.2s ease-out;
+}
+
+@keyframes qrFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qrModalContent {
+  background: var(--surface, #ffffff);
+  border: 1.5px solid var(--border-mid, rgba(45, 45, 45, 0.15));
+  border-radius: var(--r-xl, 28px);
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  animation: qrZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qrZoomIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.qrCloseBtn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: rgba(45, 45, 45, 0.06);
+  border: none;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--dark-mid, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.qrCloseBtn:hover {
+  background: rgba(230, 57, 70, 0.12);
+  color: var(--red, #E63946);
+}
+
+.qrHeader {
+  margin-bottom: 16px;
+}
+
+.qrEmojiBadge {
+  font-size: 32px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.qrTitle {
+  font-family: var(--font);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--dark, #2D2D2D);
+  margin-bottom: 4px;
+}
+
+.qrSubtitle {
+  font-size: 13px;
+  color: var(--dark-mid, #6C757D);
+  font-weight: 600;
+}
+
+.qrCanvasWrap {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 18px;
+  display: inline-block;
+  border: 2px solid var(--border-mid, rgba(45, 45, 45, 0.12));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  margin-bottom: 14px;
+}
+
+.qrImage {
+  display: block;
+  width: 220px;
+  height: 220px;
+  border-radius: 10px;
+}
+
+.qrLoading {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--dark-mid);
+}
+
+.qrInstruction {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dark-mid, #6C757D);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.qrCodeBox {
+  background: var(--surface-alt, #FFF8F0);
+  border: 1.5px dashed var(--border-mid, rgba(45, 45, 45, 0.2));
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 14px;
+}
+
+.qrCodeBox:hover {
+  border-color: var(--orange, #F4A261);
+  background: #fff;
+}
+
+.qrCodeBoxLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dark-mid, #6C757D);
+  letter-spacing: 0.5px;
+}
+
+.qrCodeBoxVal {
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--red, #E63946);
+}
+
+.qrCopyIcon {
+  font-size: 14px;
+}
+
+.qrActionRow {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.qrCopyLinkBtn {
+  background: var(--red, #E63946);
+  color: #ffffff;
+  border: none;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+  transition: all 0.15s ease;
+}
+
+.qrCopyLinkBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.qrToastFeedback {
+  background: var(--green-light, rgba(46, 204, 113, 0.15));
+  color: var(--green-dark, #1fa355);
+  border: 1px solid var(--green, #2ECC71);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  animation: qrZoomIn 0.2s ease;
+}
+
+.qrFooterBranding {
+  font-size: 11px;
+  color: var(--dark-mid);
+}
+
+/* 2. Botão de Gatilho do QR Code no Header da Sala */
+.qrTriggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(244, 162, 97, 0.18);
+  border: 1px solid rgba(244, 162, 97, 0.45);
+  color: #B25E00;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qrTriggerBtn:hover {
+  background: rgba(244, 162, 97, 0.32);
+  transform: translateY(-1px);
+}
+
+/* 3. Reações Flutuantes ao Vivo */
+.reactionsOverlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+.floatingEmojiItem {
+  position: absolute;
+  bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: floatUpAndWobble ease-in forwards;
+}
+
+@keyframes floatUpAndWobble {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-60px) scale(calc(var(--scale, 1) * 1.1)) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-300px) scale(var(--scale, 1)) rotate(8deg);
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-650px) scale(calc(var(--scale, 1) * 0.9)) rotate(-10deg);
+  }
+}
+
+.floatingEmojiText {
+  font-size: 40px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.floatingEmojiSender {
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Dock de Reações */
+.reactionDockContainer {
+  position: sticky;
+  bottom: 14px;
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+
+.reactionDock {
+  pointer-events: auto;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: dockSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dockSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.reactionDockLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  padding-left: 2px;
+}
+
+.reactionBtn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 50%;
+  transition: transform 0.12s ease, filter 0.12s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reactionBtn:hover {
+  transform: scale(1.35) translateY(-2px);
+  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.4));
+}
+
+.reactionBtn:active {
+  transform: scale(0.9);
+}
+
+/* 4. Badges Dinâmicos no Ranking */
+.badgeTrator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(230, 57, 70, 0.14);
+  color: var(--red, #E63946);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.badgePioneiro {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(46, 204, 113, 0.16);
+  color: var(--green-dark, #1fa355);
+  border: 1px solid rgba(46, 204, 113, 0.35);
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* 5. Chuva de Fatias no Fundo (Efeito Cookie Clicker) */
+.fallingBgContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.fallingItem {
+  position: absolute;
+  top: -60px;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+  animation: fallSlowly linear infinite;
+}
+
+@keyframes fallSlowly {
+  0% {
+    transform: translateY(-40px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(115vh) rotate(calc(var(--rot-dir, 1) * 360deg));
+  }
+}
+
 
 
 
