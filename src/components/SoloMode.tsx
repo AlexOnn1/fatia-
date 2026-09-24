@@ -4,14 +4,13 @@ import { calcular, formatBRL } from '../utils'
 import { useBrand } from '../context/BrandContext'
 import { triggerHaptic } from '../utils/haptics'
 import { playCrunchSound } from '../services/soundEffects'
-import { BackgroundFallingItems } from './BackgroundFallingItems'
 import s from '../App.module.css'
 
 const INITIAL_STATE: AppState = { valorRodizio: 0, fatias: 0 }
 const MAX_VALOR_DIGITS = 7 // cobre até R$ 9.999,99
 
 export function SoloMode() {
-  const { brand, formatUnits, setUserFinancialStatus } = useBrand()
+  const { brand, formatUnits, setUserFinancialStatus, setCascadeTotalFatias, setCascadeGroupSize } = useBrand()
   const [state, setState] = useState<AppState>(INITIAL_STATE)
   const [inputValue, setInputValue] = useState<string>('')
   const [editing, setEditing] = useState(false)
@@ -28,6 +27,12 @@ export function SoloMode() {
       setUserFinancialStatus(calc.status)
     }
   }, [state.valorRodizio, state.fatias, calc.status, setUserFinancialStatus])
+
+  // ── Sincronizar efeito de chuva de fatias no fundo ──
+  useEffect(() => {
+    setCascadeTotalFatias(state.fatias)
+    setCascadeGroupSize(1)
+  }, [state.fatias, setCascadeTotalFatias, setCascadeGroupSize])
 
   // Limpar ao desmontar
   useEffect(() => {
@@ -368,9 +373,6 @@ export function SoloMode() {
       <button className={s.reset} onClick={handleReset}>
         🗑️ Reiniciar
       </button>
-
-      {/* ── CHUVA DE FATIAS NO FUNDO (COOKIE CLICKER) ── */}
-      <BackgroundFallingItems totalFatias={state.fatias} groupSize={1} />
     </div>
   )
 }

@@ -11,6 +11,10 @@ interface BrandContextType {
   setTenantId: (id: string) => void
   userFinancialStatus: FinancialStatus
   setUserFinancialStatus: (status: FinancialStatus) => void
+  cascadeTotalFatias: number
+  setCascadeTotalFatias: (count: number) => void
+  cascadeGroupSize: number
+  setCascadeGroupSize: (size: number) => void
 }
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined)
@@ -18,6 +22,8 @@ const BrandContext = createContext<BrandContextType | undefined>(undefined)
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<TenantConfig>(() => getActiveTenant())
   const [userFinancialStatus, setUserFinancialStatus] = useState<FinancialStatus>('neutral')
+  const [cascadeTotalFatias, setCascadeTotalFatias] = useState<number>(0)
+  const [cascadeGroupSize, setCascadeGroupSize] = useState<number>(1)
 
   const setTenantId = (id: string) => {
     if (TENANT_REGISTRY[id]) {
@@ -74,8 +80,12 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       setTenantId,
       userFinancialStatus,
       setUserFinancialStatus,
+      cascadeTotalFatias,
+      setCascadeTotalFatias,
+      cascadeGroupSize,
+      setCascadeGroupSize,
     }),
-    [brand, formatUnits, formatConsumed, userFinancialStatus]
+    [brand, formatUnits, formatConsumed, userFinancialStatus, cascadeTotalFatias, cascadeGroupSize]
   )
 
   return <BrandContext.Provider value={value}>{children}</BrandContext.Provider>

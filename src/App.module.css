@@ -6,6 +6,8 @@
   display: flex;
   flex-direction: column;
   padding: 0 16px;
+  position: relative;
+  z-index: 5;
 }
 
 /* ══════════════════════════════
@@ -114,6 +116,8 @@
   border-radius: var(--r-xl);
   padding: 20px;
   box-shadow: 0 2px 12px rgba(45,45,45,0.06);
+  position: relative;
+  z-index: 5;
 }
 
 .cardTitle {
@@ -296,15 +300,16 @@
 
 .counterNumHint {
   font-size: 13px;
-  opacity: 0;
-  transition: opacity 0.15s;
+  opacity: 0.55;
+  transition: opacity 0.15s, transform 0.15s;
   position: absolute;
-  bottom: -2px;
+  bottom: 0px;
   right: calc(50% - 32px);
 }
 
 .counterNumBtn:hover .counterNumHint {
   opacity: 1;
+  transform: scale(1.15);
 }
 
 /* Input de digitação direta das fatias */
@@ -499,19 +504,19 @@
 }
 
 .lucro {
-  background: var(--green-light);
+  background: #EAFBF0;
   border-color: var(--green-border);
 }
 .lucro .resultMsg { color: var(--green-dark); }
 
 .prejuizo {
-  background: var(--red-light);
+  background: #FDF0F0;
   border-color: var(--red-border);
 }
 .prejuizo .resultMsg { color: var(--red-dark); }
 
 .empate {
-  background: var(--yellow-dim);
+  background: #FFF9EB;
   border-color: rgba(255,209,102,0.5);
 }
 .empate .resultMsg { color: #8a6200; }
@@ -981,6 +986,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+  z-index: 5;
 }
 
 .roomHeaderTop {
@@ -1083,13 +1090,15 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 4px;
+  position: relative;
+  z-index: 5;
 }
 
 .activityTicker {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: var(--yellow-dim);
+  background: #FFFDF5;
   border: 1.5px solid rgba(255, 209, 102, 0.45);
   padding: 10px 14px;
   border-radius: var(--r);
@@ -1273,6 +1282,22 @@
   color: var(--dark);
 }
 
+.myPlateNumBtn {
+  padding: 2px 16px;
+  border-radius: var(--r);
+  position: relative;
+}
+
+.myPlateInput {
+  font-size: 64px !important;
+  font-weight: 800 !important;
+  width: 140px !important;
+  max-width: 160px !important;
+  padding: 2px 0 !important;
+  margin-bottom: 2px;
+  height: auto;
+}
+
 .myPlateUnit {
   font-size: 12px;
   font-weight: 700;
@@ -1449,6 +1474,8 @@
   border-radius: var(--r-lg);
   padding: 18px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 5;
 }
 
 .tableStatsTitle {
@@ -1494,6 +1521,8 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 6px;
+  position: relative;
+  z-index: 5;
 }
 
 .finishBtn {
@@ -2619,35 +2648,69 @@
 
 /* ── Categoria 1: Usabilidade em Mesa ── */
 
-/* 1. Toggle de Wake Lock (Tela sempre ativa) */
+/* 1. Toggle de Wake Lock (Tela sempre ativa) — Alta visibilidade e fundo sólido */
 .wakeLockToggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #94a3b8;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 12px;
+  gap: 8px;
+  background: var(--surface);
+  border: 1.5px solid var(--border-mid);
+  color: var(--dark);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 5;
 }
 
 .wakeLockToggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #f1f5f9;
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--surface-alt);
+  border-color: var(--orange);
+  color: var(--dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.wakeLockToggle:active {
+  transform: scale(0.97);
+}
+
+.wakeLockIcon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.wakeLockText {
+  letter-spacing: 0.2px;
+}
+
+.wakeLockStatusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  display: inline-block;
+  transition: all 0.2s ease;
 }
 
 .wakeLockActive {
-  background: rgba(245, 158, 11, 0.15) !important;
-  border-color: rgba(245, 158, 11, 0.45) !important;
-  color: #fcd34d !important;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  background: #FFF9E6 !important;
+  border-color: #F59E0B !important;
+  color: #92400E !important;
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.28) !important;
+}
+
+.wakeLockActive .wakeLockStatusDot,
+.wakeLockDotActive {
+  background: #10B981 !important;
+  box-shadow: 0 0 6px #10B981;
 }
 
 /* 2. Atalhos de Adição Rápida (+1, +2, +3) — Alto Contraste & Estilo Tátil */
@@ -3086,23 +3149,28 @@
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  contain: strict;
 }
 
 .fallingItem {
   position: absolute;
-  top: -60px;
+  top: -65px;
   user-select: none;
   pointer-events: none;
   will-change: transform;
   animation: fallSlowly linear infinite;
+  animation-fill-mode: backwards;
 }
 
 @keyframes fallSlowly {
   0% {
-    transform: translateY(-40px) rotate(0deg);
+    transform: translate3d(0, -40px, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(var(--sway, 0px), 55vh, 0) rotate(calc(var(--rot-dir, 1) * 180deg));
   }
   100% {
-    transform: translateY(115vh) rotate(calc(var(--rot-dir, 1) * 360deg));
+    transform: translate3d(0, 115vh, 0) rotate(calc(var(--rot-dir, 1) * 360deg));
   }
 }
 

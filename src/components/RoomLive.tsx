@@ -11,7 +11,6 @@ import { PodiumModal } from './PodiumModal'
 import { AvatarImg } from './AvatarImg'
 import { QrCodeModal } from './QrCodeModal'
 import { LiveReactions } from './LiveReactions'
-import { BackgroundFallingItems } from './BackgroundFallingItems'
 import { useBrand } from '../context/BrandContext'
 import { triggerHaptic } from '../utils/haptics'
 import { playCrunchSound } from '../services/soundEffects'
@@ -24,13 +23,15 @@ interface RoomLiveProps {
 }
 
 export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLiveProps) {
-  const { brand, formatUnits, setUserFinancialStatus } = useBrand()
+  const { brand, formatUnits, setUserFinancialStatus, setCascadeTotalFatias, setCascadeGroupSize } = useBrand()
   const isFinished = room.status === 'finished'
   const [manualShowPodium, setManualShowPodium] = useState(false)
   const showPodium = isFinished || manualShowPodium
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
   const [optimisticFatias, setOptimisticFatias] = useState<number | null>(null)
   const [showQrModal, setShowQrModal] = useState(false)
+  const [editingFatias, setEditingFatias] = useState(false)
+  const [fatiasInput, setFatiasInput] = useState<string>('')
 
   const me = room.participants?.[currentParticipantId]
   const isHost = Boolean(me?.isHost)
@@ -63,6 +64,12 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
       setUserFinancialStatus(myCalc.status)
     }
   }, [myCalc?.status, myFatias, setUserFinancialStatus])
+
+  // Sincronizar chuva de fatias no fundo com os dados coletivos da mesa
+  useEffect(() => {
+    setCascadeTotalFatias(summary.totalFatias)
+    setCascadeGroupSize(summary.participantesCount)
+  }, [summary.totalFatias, summary.participantesCount, setCascadeTotalFatias, setCascadeGroupSize])
 
   // Limpeza ao sair da sala
   useEffect(() => {
@@ -114,6 +121,67 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
     } catch (err) {
       console.error('Erro ao atualizar fatias:', err)
       setOptimisticFatias(null)
+    }
+  }
+
+  // ── Digitação direta de fatias no Meu Prato (igual ao modo solo) ──
+  const handleStartEditFatias = () => {
+    if (isFinished) return
+    setFatiasInput('')
+    setEditingFatias(true)
+  }
+
+  const handleFatiasInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '') // só dígitos
+    if (raw.length > 3) return // máx 999 (mesmo filtro do modo solo)
+    setFatiasInput(raw)
+  }
+
+  const handleFatiasBlur = async () => {
+    setEditingFatias(false)
+    if (fatiasInput === '') return
+
+    const parsed = parseInt(fatiasInput, 10)
+    const targetFatias = isNaN(parsed) ? 0 : Math.max(0, Math.min(999, parsed))
+    setFatiasInput('')
+
+    if (targetFatias === myFatias || !me || isFinished) return
+
+    // Haptics & Som
+    if (targetFatias > myFatias) {
+      playCrunchSound()
+      if (fatiasParaEmpatar > 0 && myFatias < fatiasParaEmpatar && targetFatias >= fatiasParaEmpatar) {
+        triggerHaptic('success')
+      } else {
+        triggerHaptic('tap')
+      }
+    } else {
+      triggerHaptic('light')
+    }
+
+    setOptimisticFatias(targetFatias)
+
+    try {
+      await updateParticipantSlices({
+        roomCode: room.code,
+        participantId: currentParticipantId,
+        fatias: targetFatias,
+        participantName: me.name,
+        participantEmoji: me.emoji,
+        currentRoom: room,
+      })
+    } catch (err) {
+      console.error('Erro ao atualizar fatias:', err)
+      setOptimisticFatias(null)
+    }
+  }
+
+  const handleFatiasKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    } else if (e.key === 'Escape') {
+      setFatiasInput('')
+      setEditingFatias(false)
     }
   }
 
@@ -292,7 +360,33 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
           </button>
 
           <div className={s.myPlateNumWrapper}>
-            <span className={s.myPlateNum}>{myFatias}</span>
+            {editingFatias ? (
+              <input
+                className={`${s.counterInput} ${s.myPlateInput}`}
+                type="number"
+                inputMode="numeric"
+                value={fatiasInput}
+                onChange={handleFatiasInputChange}
+                onBlur={handleFatiasBlur}
+                onKeyDown={handleFatiasKeyDown}
+                autoFocus
+                min={0}
+                max={999}
+                placeholder={String(myFatias)}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`${s.counterNumBtn} ${s.myPlateNumBtn}`}
+                onClick={handleStartEditFatias}
+                disabled={isFinished}
+                title="Toque para digitar a quantidade"
+                aria-label={`Editar número de ${brand.item.plural}`}
+              >
+                <span className={s.myPlateNum}>{myFatias}</span>
+                <span className={s.counterNumHint}>✏️</span>
+              </button>
+            )}
             <span className={s.myPlateUnit}>
               {brand.item.plural} comid{brand.item.unitGender === 'o' ? 'os' : 'as'}
             </span>
@@ -522,11 +616,6 @@ export function RoomLive({ room, currentParticipantId, onLeaveRoom }: RoomLivePr
         isFinished={isFinished}
       />
 
-      {/* ── CHUVA DE FATIAS NO FUNDO (COOKIE CLICKER) ── */}
-      <BackgroundFallingItems
-        totalFatias={summary.totalFatias}
-        groupSize={summary.participantesCount}
-      />
 
       {/* ── MODAL DE QR CODE DA SALA ── */}
       {showQrModal && (

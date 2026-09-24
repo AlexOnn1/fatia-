@@ -18,6 +18,7 @@ import { BrandProvider, useBrand } from './context/BrandContext'
 import { SoloMode } from './components/SoloMode'
 import { RoomLobby } from './components/RoomLobby'
 import { RoomLive } from './components/RoomLive'
+import { BackgroundFallingItems } from './components/BackgroundFallingItems'
 import { useWakeLock } from './utils/wakeLock'
 import s from './App.module.css'
 
@@ -62,7 +63,14 @@ function getSocialHoverColor(type: SocialLink['type']) {
 }
 
 function AppContent() {
-  const { brand, userFinancialStatus } = useBrand()
+  const {
+    brand,
+    userFinancialStatus,
+    cascadeTotalFatias,
+    cascadeGroupSize,
+    setCascadeTotalFatias,
+    setCascadeGroupSize,
+  } = useBrand()
   const { isSupported: isWakeSupported, isActive: isWakeActive, toggleWakeLock } = useWakeLock()
   const [appMode, setAppMode] = useState<'solo' | 'room'>('solo')
   const [activeRoom, setActiveRoom] = useState<Room | null>(null)
@@ -132,12 +140,18 @@ function AppContent() {
     clearParticipantSession()
     setActiveRoom(null)
     setCurrentParticipantId(null)
+    setCascadeTotalFatias(0)
+    setCascadeGroupSize(1)
     const newUrl = window.location.pathname
     window.history.replaceState(null, '', newUrl)
   }
 
   const handleModeChange = (mode: 'solo' | 'room') => {
     setAppMode(mode)
+    if (mode === 'room' && !activeRoom) {
+      setCascadeTotalFatias(0)
+      setCascadeGroupSize(1)
+    }
     if (mode === 'solo' && !activeRoom) {
       const newUrl = window.location.pathname
       window.history.replaceState(null, '', newUrl)
@@ -145,7 +159,12 @@ function AppContent() {
   }
 
   return (
-    <div className={s.root}>
+    <>
+      <BackgroundFallingItems
+        totalFatias={cascadeTotalFatias}
+        groupSize={cascadeGroupSize}
+      />
+      <div className={s.root}>
       {/* ── HEADER ── */}
       <header className={s.header}>
         <div className={s.logoLockup}>
@@ -185,7 +204,7 @@ function AppContent() {
 
         {/* ── BOTÃO WAKE LOCK (TELA SEMPRE ATIVA NO MOBILE) ── */}
         {isWakeSupported && (
-          <div style={{ marginTop: '6px', marginBottom: '2px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ marginTop: '8px', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>
             <button
               type="button"
               className={`${s.wakeLockToggle} ${isWakeActive ? s.wakeLockActive : ''}`}
@@ -196,8 +215,11 @@ function AppContent() {
                   : 'Toque para evitar que a tela do celular apague enquanto você come.'
               }
             >
-              <span>{isWakeActive ? '💡' : '💤'}</span>
-              <span>{isWakeActive ? 'Tela Sempre Ativa' : 'Manter Tela Ativa'}</span>
+              <span className={s.wakeLockIcon}>{isWakeActive ? '💡' : '💤'}</span>
+              <span className={s.wakeLockText}>
+                {isWakeActive ? 'Tela Sempre Ativa' : 'Manter Tela Ativa'}
+              </span>
+              <span className={`${s.wakeLockStatusDot} ${isWakeActive ? s.wakeLockDotActive : ''}`} />
             </button>
           </div>
         )}
@@ -301,6 +323,7 @@ function AppContent() {
         </div>
       </footer>
     </div>
+    </>
   )
 }
 
